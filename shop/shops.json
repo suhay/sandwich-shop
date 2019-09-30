@@ -1,0 +1,16 @@
+[
+  {
+    "id": "Rye",
+    "host": "http://localhost:4006",
+    "runtimes": [
+      "node12_7"
+    ]
+  },
+  {
+    "id": "TexasToast",
+    "host": "http://localhost:4007",
+    "runtimes": [
+      "go1_13"
+    ]
+  }
+]
