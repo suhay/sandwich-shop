@@ -2,6 +2,7 @@ type Order {
   name: String!
   runtime: Runtime
   path: String
+  env: [String]
 }
 
 type Shop {

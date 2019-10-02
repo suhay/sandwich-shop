@@ -31,6 +31,12 @@ type User struct {
 	ID string
 }
 
+func check(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+
 // Middleware authorization for looking up user credentials
 func Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -58,6 +64,8 @@ func Middleware(next http.Handler) http.Handler {
 			log.Fatal("Error loading .env file")
 		}
 
+		id := "b78682b3-36c8-4759-b8d1-5e62f029a1bc" // This will be replaced with checking the request
+
 		if mongodbURL := os.Getenv("MONGODB_URL"); len(mongodbURL) > 0 {
 			mctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 			client, err := mongo.Connect(mctx, options.Client().SetRetryWrites(true).ApplyURI("mongodb+srv://"+os.Getenv("MONGODB_USER")+":"+os.Getenv("MONGODB_PASSWD")+"@"+mongodbURL+"?w=majority"))
@@ -71,7 +79,6 @@ func Middleware(next http.Handler) http.Handler {
 				Key string
 			}
 
-			id := "b78682b3-36c8-4759-b8d1-5e62f029a1bc" // This will be replaced with checking the request
 			filter := bson.M{"_id": id}
 			client.Database("sandwich-shop").Collection("tenants").FindOne(mctx, filter).Decode(&result)
 
@@ -84,7 +91,16 @@ func Middleware(next http.Handler) http.Handler {
 			}
 			log.Println("Invalid bearer token provided")
 		} else {
-			log.Println("No DB connection found")
+			dat, err := ioutil.ReadFile("./tenants/" + id + "/.key")
+			check(err)
+			// Check if the stored key equals the header
+			if token == "Bearer "+string(dat) {
+				user := User{ID: id}
+				ctx := context.WithValue(r.Context(), userCtxKey, user)
+				next.ServeHTTP(w, r.WithContext(ctx))
+				return
+			}
+			log.Println("Invalid bearer token provided")
 		}
 
 		next.ServeHTTP(w, r)
@@ -93,6 +109,6 @@ func Middleware(next http.Handler) http.Handler {
 
 // ForContext finds the user from the context. REQUIRES Middleware to have run.
 func ForContext(ctx context.Context) *User {
-	raw, _ := ctx.Value(userCtxKey).(*User)
-	return raw
+	raw, _ := ctx.Value(userCtxKey).(User)
+	return &raw
 }

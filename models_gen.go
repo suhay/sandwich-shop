@@ -9,9 +9,10 @@ import (
 )
 
 type Order struct {
-	Name    string   `json:"name"`
-	Runtime *Runtime `json:"runtime"`
-	Path    *string  `json:"path"`
+	Name    string    `json:"name"`
+	Runtime *Runtime  `json:"runtime"`
+	Path    *string   `json:"path"`
+	Env     []*string `json:"env"`
 }
 
 type Shop struct {

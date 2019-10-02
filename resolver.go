@@ -3,9 +3,11 @@ package sandwich_shop
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"log"
 
 	"github.com/suhay/sandwich-shop/auth"
+	yaml "gopkg.in/yaml.v2"
 ) // THIS CODE IS A STARTING POINT ONLY. IT WILL NOT BE UPDATED WITH SCHEMA CHANGES.
 
 // Resolver struct
@@ -16,29 +18,40 @@ func (r *Resolver) Query() QueryResolver {
 	return &queryResolver{r}
 }
 
+// OrderConfig represents the function configuration
+type OrderConfig struct {
+	Runtime string    `yaml:"runtime"`
+	Path    string    `yaml:"path"`
+	Env     []*string `yaml:"env"`
+}
+
 type queryResolver struct{ *Resolver }
 
 func (r *queryResolver) GetOrder(ctx context.Context, name string) (*Order, error) {
-
-	log.Println("Checking auth")
-
-	if user := auth.ForContext(ctx); user == nil {
+	user := auth.ForContext(ctx)
+	if user == nil || (user != nil && user.ID == "") {
 		return &Order{}, fmt.Errorf("Access denied")
 	}
 
-	log.Println("Auth done!")
+	orderConfig := make(map[string]OrderConfig)
+	data, err := ioutil.ReadFile("./tenants/" + user.ID + "/orders.yml")
+	if err != nil {
+		log.Fatalf("error: %v", err)
+	}
 
-	var path string
-	var runtime Runtime
+	err = yaml.Unmarshal([]byte(data), &orderConfig)
+	if err != nil {
+		log.Fatalf("error: %v", err)
+	}
 
-	path = "get_sandwich.js"
-	runtime = RuntimeNode12_7
-
-	log.Println("sending data back")
+	path := orderConfig[name].Path
+	env := orderConfig[name].Env
+	runtime := Runtime(orderConfig[name].Runtime)
 
 	return &Order{
 		Name:    name,
 		Runtime: &runtime,
 		Path:    &path,
+		Env:     env,
 	}, nil
 }
