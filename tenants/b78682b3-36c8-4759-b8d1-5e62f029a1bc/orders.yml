@@ -1,0 +1,5 @@
+---
+getSandwich: # order name
+  runtime: node9_10 # shop to run in
+  path: get_sandwich.js # path where function lives
+  env: [] # any variables to include
