@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"log"
 
 	"github.com/suhay/sandwich-shop/auth"
 	yaml "gopkg.in/yaml.v2"
@@ -13,7 +12,7 @@ import (
 // Resolver struct
 type Resolver struct{}
 
-// Query : Get the resolver bound to the type Query
+// Query is the resolver bound to the type Query
 func (r *Resolver) Query() QueryResolver {
 	return &queryResolver{r}
 }
@@ -36,12 +35,12 @@ func (r *queryResolver) GetOrder(ctx context.Context, name string) (*Order, erro
 	orderConfig := make(map[string]OrderConfig)
 	data, err := ioutil.ReadFile("./tenants/" + user.ID + "/orders.yml")
 	if err != nil {
-		log.Fatalf("error: %v", err)
+		return &Order{}, fmt.Errorf("error: %v", err)
 	}
 
 	err = yaml.Unmarshal([]byte(data), &orderConfig)
 	if err != nil {
-		log.Fatalf("error: %v", err)
+		return &Order{}, fmt.Errorf("error: %v", err)
 	}
 
 	path := orderConfig[name].Path

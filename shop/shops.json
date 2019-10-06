@@ -7,7 +7,7 @@
     ]
   },
   {
-    "id": "TexasToast",
+    "id": "Ciabatta",
     "host": "http://localhost:4007",
     "runtimes": [
       "go1_13"
