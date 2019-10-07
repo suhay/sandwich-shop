@@ -20,4 +20,5 @@ enum Runtime {
 
 type Query {
   GetOrder(name: String!) : Order
+  GetShops(runtime: Runtime!, limit: Int) : [Shop]
 }

@@ -2,9 +2,13 @@ package sandwich_shop
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
+	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/suhay/sandwich-shop/auth"
 	yaml "gopkg.in/yaml.v2"
 ) // THIS CODE IS A STARTING POINT ONLY. IT WILL NOT BE UPDATED WITH SCHEMA CHANGES.
@@ -33,7 +37,7 @@ func (r *queryResolver) GetOrder(ctx context.Context, name string) (*Order, erro
 	}
 
 	orderConfig := make(map[string]OrderConfig)
-	data, err := ioutil.ReadFile("./tenants/" + user.ID + "/orders.yml")
+	data, err := ioutil.ReadFile("../tenants/" + user.ID + "/orders.yml")
 	if err != nil {
 		return &Order{}, fmt.Errorf("error: %v", err)
 	}
@@ -53,4 +57,41 @@ func (r *queryResolver) GetOrder(ctx context.Context, name string) (*Order, erro
 		Path:    &path,
 		Env:     env,
 	}, nil
+}
+
+func (r *queryResolver) GetShops(ctx context.Context, name Runtime, limit *int) ([]*Shop, error) {
+	user := auth.ForContext(ctx)
+	if user == nil || (user != nil && user.ID == "") {
+		return []*Shop{}, fmt.Errorf("Access denied")
+	}
+
+	if err := godotenv.Load(); err != nil {
+		log.Println("Error loading .env file, defaulting to local files.")
+	}
+
+	avilableShops := []*Shop{}
+
+	if mongodbURL := os.Getenv("MONGODB_URL"); len(mongodbURL) > 0 {
+		panic("Not implemented!")
+	} else {
+		shops := []Shop{}
+		dat, err := ioutil.ReadFile("shops.json")
+		if err != nil {
+			return []*Shop{}, fmt.Errorf("error: %v", err)
+		}
+
+		json.Unmarshal([]byte(dat), &shops)
+		for i := range shops {
+			for _, v := range shops[i].Runtimes {
+				if *v == name {
+					avilableShops = append(avilableShops, &shops[i])
+					if *limit <= 1 || len(avilableShops) >= *limit {
+						return avilableShops, nil
+					}
+				}
+			}
+		}
+	}
+
+	return avilableShops, nil
 }

@@ -49,6 +49,7 @@ type ComplexityRoot struct {
 
 	Query struct {
 		GetOrder func(childComplexity int, name string) int
+		GetShops func(childComplexity int, runtime Runtime, limit *int) int
 	}
 
 	Shop struct {
@@ -60,6 +61,7 @@ type ComplexityRoot struct {
 
 type QueryResolver interface {
 	GetOrder(ctx context.Context, name string) (*Order, error)
+	GetShops(ctx context.Context, runtime Runtime, limit *int) ([]*Shop, error)
 }
 
 type executableSchema struct {
@@ -116,6 +118,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.GetOrder(childComplexity, args["name"].(string)), true
+
+	case "Query.GetShops":
+		if e.complexity.Query.GetShops == nil {
+			break
+		}
+
+		args, err := ec.field_Query_GetShops_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetShops(childComplexity, args["runtime"].(Runtime), args["limit"].(*int)), true
 
 	case "Shop.host":
 		if e.complexity.Shop.Host == nil {
@@ -214,6 +228,7 @@ enum Runtime {
 
 type Query {
   GetOrder(name: String!) : Order
+  GetShops(runtime: Runtime!, limit: Int) : [Shop]
 }`},
 )
 
@@ -232,6 +247,28 @@ func (ec *executionContext) field_Query_GetOrder_args(ctx context.Context, rawAr
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_GetShops_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 Runtime
+	if tmp, ok := rawArgs["runtime"]; ok {
+		arg0, err = ec.unmarshalNRuntime2githubᚗcomᚋsuhayᚋsandwichᚑshopᚐRuntime(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["runtime"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["limit"]; ok {
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["limit"] = arg1
 	return args, nil
 }
 
@@ -477,6 +514,47 @@ func (ec *executionContext) _Query_GetOrder(ctx context.Context, field graphql.C
 	rctx.Result = res
 	ctx = ec.Tracer.StartFieldChildExecution(ctx)
 	return ec.marshalOOrder2ᚖgithubᚗcomᚋsuhayᚋsandwichᚑshopᚐOrder(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_GetShops(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	ctx = ec.Tracer.StartFieldExecution(ctx, field)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+		ec.Tracer.EndFieldExecution(ctx)
+	}()
+	rctx := &graphql.ResolverContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+	ctx = graphql.WithResolverContext(ctx, rctx)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_GetShops_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	rctx.Args = args
+	ctx = ec.Tracer.StartFieldResolverExecution(ctx, rctx)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().GetShops(rctx, args["runtime"].(Runtime), args["limit"].(*int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*Shop)
+	rctx.Result = res
+	ctx = ec.Tracer.StartFieldChildExecution(ctx)
+	return ec.marshalOShop2ᚕᚖgithubᚗcomᚋsuhayᚋsandwichᚑshopᚐShop(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1887,6 +1965,17 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				res = ec._Query_GetOrder(ctx, field)
 				return res
 			})
+		case "GetShops":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_GetShops(ctx, field)
+				return res
+			})
 		case "__type":
 			out.Values[i] = ec._Query___type(ctx, field)
 		case "__schema":
@@ -2195,6 +2284,15 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) unmarshalNRuntime2githubᚗcomᚋsuhayᚋsandwichᚑshopᚐRuntime(ctx context.Context, v interface{}) (Runtime, error) {
+	var res Runtime
+	return res, res.UnmarshalGQL(v)
+}
+
+func (ec *executionContext) marshalNRuntime2githubᚗcomᚋsuhayᚋsandwichᚑshopᚐRuntime(ctx context.Context, sel ast.SelectionSet, v Runtime) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
 	return graphql.UnmarshalString(v)
 }
@@ -2458,6 +2556,29 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return ec.marshalOBoolean2bool(ctx, sel, *v)
 }
 
+func (ec *executionContext) unmarshalOInt2int(ctx context.Context, v interface{}) (int, error) {
+	return graphql.UnmarshalInt(v)
+}
+
+func (ec *executionContext) marshalOInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	return graphql.MarshalInt(v)
+}
+
+func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOInt2int(ctx, v)
+	return &res, err
+}
+
+func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec.marshalOInt2int(ctx, sel, *v)
+}
+
 func (ec *executionContext) marshalOOrder2githubᚗcomᚋsuhayᚋsandwichᚑshopᚐOrder(ctx context.Context, sel ast.SelectionSet, v Order) graphql.Marshaler {
 	return ec._Order(ctx, sel, &v)
 }
@@ -2551,6 +2672,57 @@ func (ec *executionContext) marshalORuntime2ᚖgithubᚗcomᚋsuhayᚋsandwich�
 		return graphql.Null
 	}
 	return v
+}
+
+func (ec *executionContext) marshalOShop2githubᚗcomᚋsuhayᚋsandwichᚑshopᚐShop(ctx context.Context, sel ast.SelectionSet, v Shop) graphql.Marshaler {
+	return ec._Shop(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOShop2ᚕᚖgithubᚗcomᚋsuhayᚋsandwichᚑshopᚐShop(ctx context.Context, sel ast.SelectionSet, v []*Shop) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		rctx := &graphql.ResolverContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithResolverContext(ctx, rctx)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOShop2ᚖgithubᚗcomᚋsuhayᚋsandwichᚑshopᚐShop(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalOShop2ᚖgithubᚗcomᚋsuhayᚋsandwichᚑshopᚐShop(ctx context.Context, sel ast.SelectionSet, v *Shop) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Shop(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {

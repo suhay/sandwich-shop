@@ -3,7 +3,8 @@
     "id": "Rye",
     "host": "http://localhost:4006",
     "runtimes": [
-      "node12_7"
+      "node12_7",
+      "node9_10"
     ]
   },
   {
