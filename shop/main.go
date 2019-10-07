@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"log"
 	"net/http"
 	"os"
@@ -16,13 +15,6 @@ import (
 )
 
 const defaultPort = "3002"
-
-var tenantIDCtxKey = &contextKey{"tenantID"}
-var orderCtxKey = &contextKey{"order"}
-
-type contextKey struct {
-	name string
-}
 
 func main() {
 	port := os.Getenv("PORT")
@@ -49,23 +41,12 @@ func main() {
 
 	r.Route("/shop", func(r chi.Router) {
 		r.Route("/{tenantID}/{order}", func(r chi.Router) {
-			r.Use(orderCtx)
 			r.Use(auth.Middleware)
-			r.Post("/", PlaceOrder)
+			r.Use(sandwich_shop.SetOrderCtx)
+			r.Post("/", sandwich_shop.PlaceOrder)
 		})
 	})
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground. PID: %d", port, os.Getpid())
 	log.Fatal(http.ListenAndServe(":"+port, r))
-}
-
-func orderCtx(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tenantID := chi.URLParam(r, "tenantID")
-		order := chi.URLParam(r, "order")
-
-		ctx := context.WithValue(r.Context(), tenantIDCtxKey, tenantID)
-		ctx = context.WithValue(ctx, orderCtxKey, order)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
 }
