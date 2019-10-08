@@ -3,9 +3,15 @@ package sandwich_shop
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"strings"
+	"time"
 
+	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/go-chi/chi"
 )
 
@@ -41,6 +47,7 @@ func PlaceOrder(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 		w.Write(b)
+		return
 	}
 
 	limit := 1
@@ -49,13 +56,33 @@ func PlaceOrder(w http.ResponseWriter, r *http.Request) {
 		panic(serr)
 	}
 
-	b, err := json.Marshal(s)
+	urlParts := []string{s[0].Host, incOrder.TenantID, *q.Path}
+	log.Println(urlParts)
+
+	token := jwt.New(jwt.SigningMethodHS256)
+	claims := token.Claims.(jwt.MapClaims)
+
+	claims["authorized"] = true
+	claims["tenant"] = incOrder.TenantID
+	claims["exp"] = time.Now().Add(time.Minute * 1).Unix()
+
+	tokenString, err := token.SignedString(os.Getenv("JWT_SECRET"))
 	if err != nil {
-		panic(err)
+		fmt.Errorf("Something Went Wrong: %s", err.Error())
 	}
 
-	log.Println(string(b))
-	w.Write(b)
+	client := &http.Client{}
+	req, _ := http.NewRequest("POST", strings.Join(urlParts, "/"), r.Body)
+	req.Header.Set("Token", tokenString)
+
+	resp, err := client.Do(req)
+
+	if body, _ := ioutil.ReadAll(resp.Body); len(body) > 0 {
+		w.Write(body)
+		return
+	}
+
+	w.Write([]byte("{}"))
 }
 
 // SetOrderCtx set the IncOrderContext based upon incoming request values

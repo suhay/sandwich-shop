@@ -12,6 +12,7 @@ import (
 	"github.com/99designs/gqlgen/handler"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/joho/godotenv"
 )
 
 const defaultPort = "3002"
@@ -20,6 +21,10 @@ func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
+	}
+
+	if err := godotenv.Load(); err != nil {
+		log.Println("Error loading .env file, defaulting to local files.")
 	}
 
 	r := chi.NewRouter()

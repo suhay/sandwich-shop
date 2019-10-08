@@ -5,10 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 
-	"github.com/joho/godotenv"
 	"github.com/suhay/sandwich-shop/auth"
 	yaml "gopkg.in/yaml.v2"
 ) // THIS CODE IS A STARTING POINT ONLY. IT WILL NOT BE UPDATED WITH SCHEMA CHANGES.
@@ -63,10 +61,6 @@ func (r *queryResolver) GetShops(ctx context.Context, name Runtime, limit *int) 
 	user := auth.ForContext(ctx)
 	if user == nil || (user != nil && user.ID == "") {
 		return []*Shop{}, fmt.Errorf("Access denied")
-	}
-
-	if err := godotenv.Load(); err != nil {
-		log.Println("Error loading .env file, defaulting to local files.")
 	}
 
 	avilableShops := []*Shop{}
