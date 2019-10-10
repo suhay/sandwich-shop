@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"time"
@@ -40,11 +41,13 @@ func main() {
 		cheeses = append(cheeses, cheese[rand.Intn(len(cheese))])
 	}
 
-	fmt.Print(sandwich{
+	wich, _ := json.Marshal(sandwich{
 		Bread:   breads[rand.Intn(len(breads))],
 		Mayo:    rand.Intn(1) == 1,
 		Veggies: veggies,
 		Meat:    meats,
 		Cheese:  cheeses,
 	})
+
+	fmt.Printf("%s", wich)
 }

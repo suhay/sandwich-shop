@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -57,16 +56,13 @@ func PlaceOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	urlParts := []string{s[0].Host, incOrder.TenantID, *q.Path}
-	log.Println(urlParts)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"authorized": true,
+		"tenant":     incOrder.TenantID,
+		"exp":        time.Now().Add(time.Minute * 1).Unix(),
+	})
 
-	token := jwt.New(jwt.SigningMethodHS256)
-	claims := token.Claims.(jwt.MapClaims)
-
-	claims["authorized"] = true
-	claims["tenant"] = incOrder.TenantID
-	claims["exp"] = time.Now().Add(time.Minute * 1).Unix()
-
-	tokenString, err := token.SignedString(os.Getenv("JWT_SECRET"))
+	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
 		fmt.Errorf("Something Went Wrong: %s", err.Error())
 	}
