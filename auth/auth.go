@@ -60,7 +60,6 @@ func Middleware(next http.Handler) http.Handler {
 		}
 
 		tenantID := chi.URLParam(r, "tenantID")
-		// id := "b78682b3-36c8-4759-b8d1-5e62f029a1bc" // This will be replaced with checking the request
 
 		if mongodbURL := os.Getenv("MONGODB_URL"); len(mongodbURL) > 0 {
 			mctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
