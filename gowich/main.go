@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strconv"
+	"strings"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
@@ -19,6 +21,7 @@ const defaultPort = "4007"
 type shopOrder struct {
 	Authorized bool   `json:"authorized"`
 	Tenant     string `json:"tenant"`
+	Runtime    string `json:"runtime"`
 	jwt.StandardClaims
 }
 
@@ -37,8 +40,9 @@ func main() {
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Use(middleware.Timeout(60 * time.Second))
-	r.Use(middleware.ThrottleBacklog(2, 5, time.Second*61))
+	i, _ := strconv.ParseInt(os.Getenv("TIMEOUT"), 10, 32)
+	r.Use(middleware.Timeout(time.Second * time.Duration(i)))
+	r.Use(middleware.ThrottleBacklog(2, 5, time.Second*time.Duration(i+1)))
 
 	r.Post("/{tenantID}/{order}", func(w http.ResponseWriter, r *http.Request) {
 		if r.Header["Token"] != nil {
@@ -55,7 +59,9 @@ func main() {
 
 			if claims, ok := token.Claims.(*shopOrder); ok && token.Valid {
 				if chi.URLParam(r, "tenantID") == claims.Tenant && claims.Authorized {
-					out, err := exec.Command("go", "run", "../tenants/"+claims.Tenant+"/"+chi.URLParam(r, "order")).Output()
+					cmd := exec.Command(os.Getenv(strings.ToUpper(claims.Runtime)), "run", chi.URLParam(r, "order"))
+					cmd.Dir = "../tenants/" + claims.Tenant
+					out, err := cmd.Output()
 					if err != nil {
 						log.Println(err.Error())
 						fmt.Fprintf(w, "There was an error")
@@ -63,18 +69,19 @@ func main() {
 					fmt.Fprintf(w, "%s", out)
 					return
 				}
-			} else {
-				log.Println(err.Error())
-				fmt.Fprintf(w, "There was an error")
+
+				fmt.Fprintf(w, "Not Authorized")
+				return
 			}
-		} else {
-			fmt.Fprintf(w, "Not Authorized")
+
+			log.Println(err.Error())
+			fmt.Fprintf(w, "There was an error")
 			return
 		}
 
-		w.Write([]byte("What would you like on your Gowich?"))
+		fmt.Fprintf(w, "Not Authorized")
 	})
 
-	log.Printf("connect to http://localhost:%s/ for GraphQL playground.", port)
+	log.Printf("Gowich online: http://localhost:%s/", port)
 	log.Fatal(http.ListenAndServe(":"+port, r))
 }
