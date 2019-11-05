@@ -60,6 +60,7 @@ func PlaceOrder(w http.ResponseWriter, r *http.Request) {
 		"authorized": true,
 		"tenant":     incOrder.TenantID,
 		"exp":        time.Now().Add(time.Minute * 1).Unix(),
+		"runtime":    *q.Runtime,
 	})
 
 	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
@@ -70,10 +71,12 @@ func PlaceOrder(w http.ResponseWriter, r *http.Request) {
 	client := &http.Client{}
 	req, _ := http.NewRequest("POST", strings.Join(urlParts, "/"), r.Body)
 	req.Header.Set("Token", tokenString)
+	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
 
 	if body, _ := ioutil.ReadAll(resp.Body); len(body) > 0 {
+		w.Header().Add("Content-Type", "application/json")
 		w.Write(body)
 		return
 	}
