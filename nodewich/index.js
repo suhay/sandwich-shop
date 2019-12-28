@@ -13,10 +13,6 @@ const defaultPort = "4006"
 
 const port = process.env.PORT || defaultPort
 
-function haltOnTimedout(req, res, next) {
-  if (!req.timedout) next()
-}
-
 app.use(logger(`common`))
 app.use(
   jwt({

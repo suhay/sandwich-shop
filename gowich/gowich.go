@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -25,15 +26,32 @@ type shopOrder struct {
 	jwt.StandardClaims
 }
 
+func setPort(port1, port2 string) string {
+	if port1 != "" {
+		return port1
+	} else if port2 != "" {
+		return port2
+	}
+	return defaultPort
+}
+
 func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = defaultPort
+	flagEnvPath := flag.String("env", "", "Path to .env file to use")
+	flagPort := flag.String("port", "", "Port for the Gowich to run one")
+
+	flag.Parse()
+
+	if *flagEnvPath != "" {
+		if err := godotenv.Load(*flagEnvPath); err != nil {
+			log.Println("Error loading .env file, defaulting to local files.")
+		}
+	} else {
+		if err := godotenv.Load(); err != nil {
+			log.Println("Error loading .env file, defaulting to local files.")
+		}
 	}
 
-	if err := godotenv.Load(); err != nil {
-		log.Println("Error loading .env file, defaulting to local files.")
-	}
+	port := setPort(*flagPort, os.Getenv("PORT"))
 
 	r := chi.NewRouter()
 
