@@ -1,14 +1,15 @@
 [
   {
-    "id": "Rye",
+    "_id": "rye",
+    "name": "Rye",
     "host": "http://localhost:4006",
     "runtimes": [
-      "node12_7",
-      "node9_10"
+      "node12_7"
     ]
   },
   {
-    "id": "Ciabatta",
+    "_id": "ciabatta",
+    "name": "Ciabatta",
     "host": "http://localhost:4007",
     "runtimes": [
       "go1_13"

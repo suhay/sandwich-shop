@@ -57,9 +57,9 @@ func Middleware(next http.Handler) http.Handler {
     tenantID := chi.URLParam(r, "tenantID")
 
     if mongodbURL := os.Getenv("MONGODB_URL"); len(mongodbURL) > 0 {
-      mctx, can := context.WithTimeout(context.Background(), 10*time.Second)
-      if can != nil {
-        can()
+      mctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+      if cancel != nil {
+        cancel()
       }
       
       client, err := mongo.Connect(mctx, options.Client().SetRetryWrites(true).ApplyURI("mongodb+srv://"+os.Getenv("MONGODB_USER")+":"+os.Getenv("MONGODB_PASSWD")+"@"+mongodbURL+"?w=majority"))

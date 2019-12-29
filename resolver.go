@@ -1,13 +1,21 @@
 package sandwich_shop
 
+//go:generate go run github.com/99designs/gqlgen
+
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
+	"time"
 
 	"github.com/suhay/sandwich-shop/auth"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	yaml "gopkg.in/yaml.v2"
 ) // THIS CODE IS A STARTING POINT ONLY. IT WILL NOT BE UPDATED WITH SCHEMA CHANGES.
 
@@ -64,9 +72,49 @@ func (r *queryResolver) GetShops(ctx context.Context, name Runtime, limit *int) 
 	}
 
 	avilableShops := []*Shop{}
-
 	if mongodbURL := os.Getenv("MONGODB_URL"); len(mongodbURL) > 0 {
-		panic("Not implemented!")
+		mctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+
+		client, err := mongo.Connect(mctx, options.Client().SetRetryWrites(true).ApplyURI("mongodb+srv://"+os.Getenv("MONGODB_USER")+":"+os.Getenv("MONGODB_PASSWD")+"@"+mongodbURL+"/"))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		log.Println("Connecting to MongoDB")
+
+		var limit64 int64
+		if limit == nil {
+			defaultLimit := 10
+			limit64 = int64(defaultLimit)
+		} else {
+			limit64 = int64(*limit)
+		}
+
+		findOptions := options.Find()
+		findOptions.SetLimit(limit64)
+
+		filter := bson.M{"runtimes": name}
+		shops, err := client.Database("sandwich-shop").Collection("shops").Find(mctx, filter, findOptions)
+
+		if cancel != nil {
+			cancel()
+		}
+
+		if err != nil {
+			log.Println(err)
+			return []*Shop{}, fmt.Errorf("error: %v", err)
+		}
+		if shops == nil {
+			return []*Shop{}, nil
+		}
+
+		for shops.Next(mctx) {
+			var result *Shop
+			shops.Decode(&result)
+			avilableShops = append(avilableShops, result)
+		}
+
+		shops.Close(mctx)
 	} else {
 		shops := []Shop{}
 		dat, err := ioutil.ReadFile("shops.json")

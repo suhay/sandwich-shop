@@ -16,7 +16,7 @@ type Order struct {
 }
 
 type Shop struct {
-	ID       string     `json:"id"`
+	Name     string     `json:"name"`
 	Host     string     `json:"host"`
 	Runtimes []*Runtime `json:"runtimes"`
 }
