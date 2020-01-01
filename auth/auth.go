@@ -75,7 +75,8 @@ func Middleware(next http.Handler) http.Handler {
 
       filter := bson.M{"_id": tenantID}
       client.Database("sandwich-shop").Collection("tenants").FindOne(mctx, filter).Decode(&result)
-
+			client.Disconnect(mctx)
+			
       // Check if the stored key equals the header
       if token == "Bearer "+result.Key {
         user := User{ID: tenantID}
