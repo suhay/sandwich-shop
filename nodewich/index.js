@@ -37,7 +37,7 @@ app.post('/:tenantID/:order',
     if (req.user.tenant === req.params.tenantID && req.user.authorized) {
       const child = cp.exec(`${process.env[req.user.runtime.toUpperCase()]} ${req.params.order} '${JSON.stringify(req.body)}'`, 
         {
-          cwd: path.resolve(`../tenants/${req.params.tenantID}`),
+          cwd: path.resolve(`${process.env.TENANTS || `../tenants`}/${req.params.tenantID}`),
           timeout: process.env.TIMEOUT * 1000
         },
         (err, stdout, stderr) => {

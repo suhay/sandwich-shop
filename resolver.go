@@ -42,8 +42,13 @@ func (r *queryResolver) GetOrder(ctx context.Context, name string) (*Order, erro
 		return &Order{}, fmt.Errorf("Access denied")
 	}
 
+	tenants := "tenants"
+	if envTenants := os.Getenv("TENANTS"); envTenants != "" {
+		tenants = envTenants
+	}
+
 	orderConfig := make(map[string]OrderConfig)
-	data, err := ioutil.ReadFile("../tenants/" + user.ID + "/orders.yml")
+	data, err := ioutil.ReadFile(tenants+"/"+user.ID+"/orders.yml")
 	if err != nil {
 		return &Order{}, fmt.Errorf("error: %v", err)
 	}

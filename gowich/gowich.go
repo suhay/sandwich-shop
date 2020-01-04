@@ -78,7 +78,14 @@ func main() {
 			if claims, ok := token.Claims.(*shopOrder); ok && token.Valid {
 				if chi.URLParam(r, "tenantID") == claims.Tenant && claims.Authorized {
 					cmd := exec.Command(os.Getenv(strings.ToUpper(claims.Runtime)), "run", chi.URLParam(r, "order"))
-					cmd.Dir = "../tenants/" + claims.Tenant
+					
+					tenants := "../tenants"
+					if envTenants := os.Getenv("TENANTS"); envTenants != "" {
+						tenants = envTenants
+					}
+
+					cmd.Dir = tenants+"/"+claims.Tenant
+
 					out, err := cmd.Output()
 					if err != nil {
 						log.Println(err.Error())
