@@ -70,6 +70,6 @@ func main() {
     })
   })
 
-  log.Printf("connect to http://localhost:%s/ for GraphQL playground. PID: %d", port, os.Getpid())
+  log.Printf("connect to http://localhost:%s/ for GraphQL playground.", port)
   log.Fatal(http.ListenAndServe(":"+port, r))
 }

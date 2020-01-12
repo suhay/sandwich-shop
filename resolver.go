@@ -102,7 +102,7 @@ func (r *queryResolver) GetShops(ctx context.Context, name Runtime, limit *int) 
 		shops, err := client.Database("sandwich-shop").Collection("shops").Find(mctx, filter, findOptions)
 
 		if cancel != nil {
-			cancel()
+			defer cancel()
 		}
 
 		if err != nil {
@@ -119,7 +119,7 @@ func (r *queryResolver) GetShops(ctx context.Context, name Runtime, limit *int) 
 			avilableShops = append(avilableShops, result)
 		}
 
-		shops.Close(mctx)
+		defer shops.Close(mctx)
 	} else {
 		shops := []Shop{}
 		dat, err := ioutil.ReadFile("shops.json")

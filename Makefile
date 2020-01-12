@@ -2,21 +2,21 @@ GOCMD=go
 GOINSTALL=$(GOCMD) install
 GOCLEAN=$(GOCMD) clean
 GORUN=$(GOCMD) run
-GOWICH=$(GOINSTALL) ${GOPATH}/src/github.com/suhay/sandwich-shop/gowich/gowich.go
+GOWICHINSTALL=$(GOINSTALL) ${GOPATH}/src/github.com/suhay/sandwich-shop/gowich/gowich.go
 NODEWICH=cd ${GOPATH}/src/github.com/suhay/sandwich-shop/nodewich && yarn install --production && cd $(shell pwd)
 
 install: 
 	$(GOINSTALL) ${GOPATH}/src/github.com/suhay/sandwich-shop/shop/sandwich-shop.go
 
 sandwiches:
-	$(GOWICH)
+	$(GOWICHINSTALL)
 	$(NODEWICH)
 
 nodewich:
 	$(NODEWICH)
 
 gowich:
-	$(GOWICH)
+	$(GOWICHINSTALL)
 
 clean: 
 	$(GOCLEAN)

@@ -29,7 +29,7 @@ You will need to provide your own version of Node and Go in order to run these m
 $ sandwich-shop [--env=<path>] [--port=<port>]
 ```
 
-|||
+|Flag|Description|
 |-|-|
 |`--env`|Path to a local, or remote `.env` this process should use for default configurations.|
 |`--port`|The port number to run on.|
@@ -46,7 +46,7 @@ JWT_SECRET=1234567890jwtsecretcode
 TIMEOUT=60
 ```
 
-|||
+|Key|Description|
 |---|---|
 |`MONGODB_URL`|URL to the mongo database that stores tenant information including the `Bearer` token.|
 |`MONGODB_USER`|User for logging into the tenant info database.|
@@ -79,7 +79,7 @@ A shop is what is handling the heavy lifting. Each shop is specialized in runnin
 ]
 ```
 
-|||
+|Key|Description|
 |---|---|
 |`_id`|Shop's id|
 |`name`|Human readable name, used more for easily identifying when there is an error (and the shop ids are uuids).|
@@ -103,7 +103,7 @@ GO1_13=/path/to/go1.13
 TENANTS=/path/to/tenants
 ```
 
-|||
+|Key|Description|
 |-|-|
 |`PORT`|Port to run this shop on. This will be overridden if `--port` is supplied as a command argument.|
 |`TIMEOUT`|Timeout, in seconds, to wait for an order to finish.|
@@ -135,7 +135,7 @@ NODE12_7=/path/to/node12
 TENANTS=/path/to/tenants
 ```
 
-|||
+|Key|Description|
 |-|-|
 |`PORT`|Port to run this shop on. This will be overridden if `--port` is supplied as a command argument.|
 |`TIMEOUT`|Timeout, in seconds, to wait for an order to finish.|
@@ -240,7 +240,7 @@ $ gowich &
 
 - [ ] Nodewich CLI
 
-- [x] Move tenant path into an environment variable
+- [x] ~~Move tenant path into an environment variable~~
 
 - [ ] Dockerize `Gowich` and `Nodewich` shops for ease of adding or removing them as needed
 

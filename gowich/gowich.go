@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	// "syscall"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
@@ -73,23 +74,50 @@ func main() {
 			if err != nil {
 				log.Println(err.Error())
 				fmt.Fprintf(w, "There was an error")
+				return
 			}
 
 			if claims, ok := token.Claims.(*shopOrder); ok && token.Valid {
 				if chi.URLParam(r, "tenantID") == claims.Tenant && claims.Authorized {
-					cmd := exec.Command(os.Getenv(strings.ToUpper(claims.Runtime)), "run", chi.URLParam(r, "order"))
+					order := chi.URLParam(r, "order")
+					var cmd *exec.Cmd
 					
+					if strings.HasSuffix(order, ".go") {
+						cmd = exec.Command(os.Getenv(strings.ToUpper(claims.Runtime)), "run", order)
+					} else {
+						cmd = exec.Command("./"+order)
+					}
+
 					tenants := "../tenants"
 					if envTenants := os.Getenv("TENANTS"); envTenants != "" {
 						tenants = envTenants
 					}
 
-					cmd.Dir = tenants+"/"+claims.Tenant
+					cmd.Dir = tenants + "/" + claims.Tenant
 
+					// cmd.SysProcAttr = &syscall.SysProcAttr{}
+
+					// uid, uerr := strconv.ParseUint(os.Getenv("UID"), 10, 32)
+					// if uerr != nil {
+					// 	log.Println(uerr.Error())
+					// 	fmt.Fprintf(w, "There was an error")
+					// 	return
+					// }
+
+					// gid, gerr := strconv.ParseUint(os.Getenv("GID"), 10, 32)
+					// if gerr != nil {
+					// 	log.Println(gerr.Error())
+					// 	fmt.Fprintf(w, "There was an error")
+					// 	return
+					// }
+
+					// hold := &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid)}
+					
 					out, err := cmd.Output()
 					if err != nil {
 						log.Println(err.Error())
 						fmt.Fprintf(w, "There was an error")
+						return
 					}
 					fmt.Fprintf(w, "%s", out)
 					return

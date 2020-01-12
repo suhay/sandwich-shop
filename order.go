@@ -8,7 +8,8 @@ import (
   "net/http"
   "os"
   "strings"
-  "time"
+	"time"
+	"log"
 
   jwt "github.com/dgrijalva/jwt-go"
   "github.com/go-chi/chi"
@@ -65,8 +66,9 @@ func PlaceOrder(w http.ResponseWriter, r *http.Request) {
 
   tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
   if err != nil {
-    jwterr := fmt.Errorf("Something Went Wrong: %s", err.Error())
-    panic(jwterr)
+    jwterr := fmt.Errorf("Something Went Wrong validating the request: %s", err.Error())
+		log.Println(jwterr)
+		return
   }
 
   client := &http.Client{}
@@ -76,8 +78,10 @@ func PlaceOrder(w http.ResponseWriter, r *http.Request) {
 
   resp, err := client.Do(req)
   if err != nil {
-    jwterr := fmt.Errorf("Something Went Wrong: %s", err.Error())
-    panic(jwterr)
+    jwterr := fmt.Errorf("Something Went Wrong sending client request: %s", err.Error())
+		log.Println(jwterr)
+		w.Write([]byte(`{ "error": "The shops seem to be down." }`))
+		return
   }
   
   if body, _ := ioutil.ReadAll(resp.Body); len(body) > 0 {

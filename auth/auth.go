@@ -36,6 +36,7 @@ func Middleware(next http.Handler) http.Handler {
   return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
     token := r.Header.Get("Authorization")
     if len(token) == 0 {
+			log.Println("Authorization token not found.")
       next.ServeHTTP(w, r)
       return
     }
@@ -59,15 +60,15 @@ func Middleware(next http.Handler) http.Handler {
     if mongodbURL := os.Getenv("MONGODB_URL"); len(mongodbURL) > 0 {
       mctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
       if cancel != nil {
-        cancel()
+        defer cancel()
       }
       
-      client, err := mongo.Connect(mctx, options.Client().SetRetryWrites(true).ApplyURI("mongodb+srv://"+os.Getenv("MONGODB_USER")+":"+os.Getenv("MONGODB_PASSWD")+"@"+mongodbURL+"?w=majority"))
+			log.Println("Connecting to MongoDB")
+      client, err := mongo.Connect(mctx, options.Client().SetRetryWrites(true).ApplyURI("mongodb+srv://"+os.Getenv("MONGODB_USER")+":"+os.Getenv("MONGODB_PASSWD")+"@"+mongodbURL+"/?w=majority"))
       if err != nil {
-        log.Fatal(err)
+        log.Println(err)
       }
-
-      log.Println("Connecting to MongoDB")
+			log.Println("Connected")
 
       var result struct {
         Key string
@@ -75,11 +76,11 @@ func Middleware(next http.Handler) http.Handler {
 
       filter := bson.M{"_id": tenantID}
       client.Database("sandwich-shop").Collection("tenants").FindOne(mctx, filter).Decode(&result)
-			client.Disconnect(mctx)
+			defer client.Disconnect(mctx)
 			
       // Check if the stored key equals the header
       if token == "Bearer "+result.Key {
-        user := User{ID: tenantID}
+				user := User{ID: tenantID}
         ctx := context.WithValue(r.Context(), userCtxKey, user)
         next.ServeHTTP(w, r.WithContext(ctx))
         return
@@ -88,7 +89,7 @@ func Middleware(next http.Handler) http.Handler {
     } else {
       dat, err := ioutil.ReadFile("../tenants/" + tenantID + "/.key")
       if err != nil {
-        panic(err)
+        log.Println(err)
       }
       // Check if the stored key equals the header
       if token == "Bearer "+string(dat) {
