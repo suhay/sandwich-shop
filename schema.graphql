@@ -9,16 +9,17 @@ type Shop {
   name: String!
   host: String!
   runtimes(id: Runtime) : [Runtime]
+  port: Int
 }
 
 enum Runtime {
-  node9_10
-  node10_6
-  node12_7
-  go1_13
+  node14
+  node16
+  go1_15
+  go1_17
 }
 
 type Query {
-  GetOrder(name: String!) : Order
-  GetShops(runtime: Runtime!, limit: Int) : [Shop]
+  order(name: String!) : Order
+  shops(runtime: Runtime!, limit: Int) : [Shop]!
 }

@@ -4,7 +4,7 @@ const jwt = require('express-jwt')
 const express = require(`express`)
 const timeout = require(`connect-timeout`)
 const cp = require('child_process')
-const bodyParser = require('body-parser')
+const { json, urlencoded } = require('body-parser')
 const logger = require(`morgan`)
 const path = require(`path`)
 
@@ -28,8 +28,8 @@ app.use(
     }
   })
 )
-app.use(bodyParser.json())
-app.use(bodyParser.urlencoded({ extended: true }))
+app.use(json())
+app.use(urlencoded({ extended: true }))
 
 app.post('/:tenantID/:order', 
   timeout(`${process.env.TIMEOUT}s`), 

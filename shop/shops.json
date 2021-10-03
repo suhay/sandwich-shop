@@ -2,17 +2,20 @@
   {
     "_id": "rye",
     "name": "Rye",
-    "host": "http://localhost:4006",
+    "host": "http://localhost",
+    "port": 4006,
     "runtimes": [
-      "node12_7"
+      "node14",
+      "node16"
     ]
   },
   {
     "_id": "ciabatta",
     "name": "Ciabatta",
-    "host": "http://localhost:4007",
+    "host": "http://localhost",
+    "port": 4007,
     "runtimes": [
-      "go1_13"
+      "go1_17"
     ]
   }
-]
+]  

@@ -6,12 +6,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"time"
 
 	"github.com/suhay/sandwich-shop/auth"
+	shop "github.com/suhay/sandwich-shop/models"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -20,10 +20,12 @@ import (
 ) // THIS CODE IS A STARTING POINT ONLY. IT WILL NOT BE UPDATED WITH SCHEMA CHANGES.
 
 // Resolver struct
-type Resolver struct{}
+type Resolver struct {
+	// shops map[models.Runtime][]*models.Shop
+}
 
 // Query is the resolver bound to the type Query
-func (r *Resolver) Query() QueryResolver {
+func (r *Resolver) Query() shop.QueryResolver {
 	return &queryResolver{r}
 }
 
@@ -36,10 +38,10 @@ type OrderConfig struct {
 
 type queryResolver struct{ *Resolver }
 
-func (r *queryResolver) GetOrder(ctx context.Context, name string) (*Order, error) {
+func (r *queryResolver) Order(ctx context.Context, name string) (*shop.Order, error) {
 	user := auth.ForContext(ctx)
 	if user == nil || (user != nil && user.ID == "") {
-		return &Order{}, fmt.Errorf("Access denied")
+		return &shop.Order{}, fmt.Errorf("access denied")
 	}
 
 	tenants := "tenants"
@@ -48,21 +50,21 @@ func (r *queryResolver) GetOrder(ctx context.Context, name string) (*Order, erro
 	}
 
 	orderConfig := make(map[string]OrderConfig)
-	data, err := ioutil.ReadFile(tenants+"/"+user.ID+"/orders.yml")
+	data, err := os.ReadFile(tenants + "/" + user.ID + "/orders.yml")
 	if err != nil {
-		return &Order{}, fmt.Errorf("error: %v", err)
+		return &shop.Order{}, fmt.Errorf("error: %v", err)
 	}
 
 	err = yaml.Unmarshal([]byte(data), &orderConfig)
 	if err != nil {
-		return &Order{}, fmt.Errorf("error: %v", err)
+		return &shop.Order{}, fmt.Errorf("error: %v", err)
 	}
 
 	path := orderConfig[name].Path
 	env := orderConfig[name].Env
-	runtime := Runtime(orderConfig[name].Runtime)
+	runtime := shop.Runtime(orderConfig[name].Runtime)
 
-	return &Order{
+	return &shop.Order{
 		Name:    name,
 		Runtime: &runtime,
 		Path:    &path,
@@ -70,13 +72,24 @@ func (r *queryResolver) GetOrder(ctx context.Context, name string) (*Order, erro
 	}, nil
 }
 
-func (r *queryResolver) GetShops(ctx context.Context, name Runtime, limit *int) ([]*Shop, error) {
-	user := auth.ForContext(ctx)
-	if user == nil || (user != nil && user.ID == "") {
-		return []*Shop{}, fmt.Errorf("Access denied")
+func (r *queryResolver) Shops(ctx context.Context, name shop.Runtime, limit *int) ([]*shop.Shop, error) {
+	// Check for admin user when we build out the admin dashboards
+	// user := auth.ForContext(ctx)
+	// if user == nil || (user != nil && user.ID == "") {
+	// 	return []*Shop{}, fmt.Errorf("access denied")
+	// }
+
+	avilableShops := []*shop.Shop{}
+	var limit64 int64
+
+	if limit == nil {
+		defaultLimit := 10
+		limit64 = int64(defaultLimit)
+		limit = &defaultLimit
+	} else {
+		limit64 = int64(*limit)
 	}
 
-	avilableShops := []*Shop{}
 	if mongodbURL := os.Getenv("MONGODB_URL"); len(mongodbURL) > 0 {
 		mctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 
@@ -86,14 +99,6 @@ func (r *queryResolver) GetShops(ctx context.Context, name Runtime, limit *int) 
 		}
 
 		log.Println("Connecting to MongoDB")
-
-		var limit64 int64
-		if limit == nil {
-			defaultLimit := 10
-			limit64 = int64(defaultLimit)
-		} else {
-			limit64 = int64(*limit)
-		}
 
 		findOptions := options.Find()
 		findOptions.SetLimit(limit64)
@@ -107,24 +112,26 @@ func (r *queryResolver) GetShops(ctx context.Context, name Runtime, limit *int) 
 
 		if err != nil {
 			log.Println(err)
-			return []*Shop{}, fmt.Errorf("error: %v", err)
+			return []*shop.Shop{}, fmt.Errorf("error: %v", err)
 		}
 		if shops == nil {
-			return []*Shop{}, nil
+			return []*shop.Shop{}, nil
 		}
 
 		for shops.Next(mctx) {
-			var result *Shop
+			var result *shop.Shop
 			shops.Decode(&result)
 			avilableShops = append(avilableShops, result)
 		}
 
 		defer shops.Close(mctx)
 	} else {
-		shops := []Shop{}
-		dat, err := ioutil.ReadFile("shops.json")
+		shopsFilePath := os.Getenv("SHOPS")
+
+		shops := []shop.Shop{}
+		dat, err := os.ReadFile(shopsFilePath)
 		if err != nil {
-			return []*Shop{}, fmt.Errorf("error: %v", err)
+			return []*shop.Shop{}, fmt.Errorf("error: %v", err)
 		}
 
 		json.Unmarshal([]byte(dat), &shops)
