@@ -42,10 +42,12 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Order struct {
-		Env     func(childComplexity int) int
-		Name    func(childComplexity int) int
-		Path    func(childComplexity int) int
-		Runtime func(childComplexity int) int
+		Auth       func(childComplexity int) int
+		AuthHeader func(childComplexity int) int
+		Env        func(childComplexity int) int
+		Name       func(childComplexity int) int
+		Path       func(childComplexity int) int
+		Runtime    func(childComplexity int) int
 	}
 
 	Query struct {
@@ -80,6 +82,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "Order.auth":
+		if e.complexity.Order.Auth == nil {
+			break
+		}
+
+		return e.complexity.Order.Auth(childComplexity), true
+
+	case "Order.auth_header":
+		if e.complexity.Order.AuthHeader == nil {
+			break
+		}
+
+		return e.complexity.Order.AuthHeader(childComplexity), true
 
 	case "Order.env":
 		if e.complexity.Order.Env == nil {
@@ -221,6 +237,8 @@ var sources = []*ast.Source{
   runtime: Runtime
   path: String
   env: [String]
+  auth: String
+  auth_header: String
 }
 
 type Shop {
@@ -484,6 +502,70 @@ func (ec *executionContext) _Order_env(ctx context.Context, field graphql.Collec
 	res := resTmp.([]*string)
 	fc.Result = res
 	return ec.marshalOString2ᚕᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Order_auth(ctx context.Context, field graphql.CollectedField, obj *Order) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Order",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Auth, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Order_auth_header(ctx context.Context, field graphql.CollectedField, obj *Order) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Order",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AuthHeader, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_order(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1931,6 +2013,10 @@ func (ec *executionContext) _Order(ctx context.Context, sel ast.SelectionSet, ob
 			out.Values[i] = ec._Order_path(ctx, field, obj)
 		case "env":
 			out.Values[i] = ec._Order_env(ctx, field, obj)
+		case "auth":
+			out.Values[i] = ec._Order_auth(ctx, field, obj)
+		case "auth_header":
+			out.Values[i] = ec._Order_auth_header(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

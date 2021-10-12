@@ -81,8 +81,8 @@ func main() {
 
 	r.Route("/shop", func(r chi.Router) {
 		r.Route("/{tenantID}/{order}", func(r chi.Router) {
-			r.Use(auth.Middleware)
 			r.Use(shop.SetOrderCtx)
+			r.Use(auth.Middleware)
 			r.Post("/", shop.PlaceOrder)
 		})
 	})
