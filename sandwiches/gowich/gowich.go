@@ -9,12 +9,13 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+
 	// "syscall"
 	"time"
 
-	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	jwt "github.com/golang-jwt/jwt"
 	"github.com/joho/godotenv"
 )
 
@@ -65,12 +66,15 @@ func main() {
 
 	r.Post("/{tenantID}/{order}", func(w http.ResponseWriter, r *http.Request) {
 		if r.Header["Token"] != nil {
+			log.Println("running command...")
+
 			token, err := jwt.ParseWithClaims(r.Header["Token"][0], &shopOrder{}, func(token *jwt.Token) (interface{}, error) {
 				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-					return nil, fmt.Errorf("There was an error")
+					return nil, fmt.Errorf("there was an error")
 				}
 				return []byte(os.Getenv("JWT_SECRET")), nil
 			})
+
 			if err != nil {
 				log.Println(err.Error())
 				fmt.Fprintf(w, "There was an error")
@@ -81,11 +85,11 @@ func main() {
 				if chi.URLParam(r, "tenantID") == claims.Tenant && claims.Authorized {
 					order := chi.URLParam(r, "order")
 					var cmd *exec.Cmd
-					
+
 					if strings.HasSuffix(order, ".go") {
 						cmd = exec.Command(os.Getenv(strings.ToUpper(claims.Runtime)), "run", order)
 					} else {
-						cmd = exec.Command("./"+order)
+						cmd = exec.Command("./" + order)
 					}
 
 					tenants := "../tenants"
@@ -112,7 +116,7 @@ func main() {
 					// }
 
 					// hold := &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid)}
-					
+
 					out, err := cmd.Output()
 					if err != nil {
 						log.Println(err.Error())
