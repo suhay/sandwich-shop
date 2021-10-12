@@ -3,6 +3,8 @@ type Order {
   runtime: Runtime
   path: String
   env: [String]
+  auth: String
+  auth_header: String
 }
 
 type Shop {

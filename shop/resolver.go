@@ -10,7 +10,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/suhay/sandwich-shop/auth"
 	shop "github.com/suhay/sandwich-shop/models"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -18,6 +17,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	yaml "gopkg.in/yaml.v2"
 ) // THIS CODE IS A STARTING POINT ONLY. IT WILL NOT BE UPDATED WITH SCHEMA CHANGES.
+
+type contextKey struct {
+	name string
+}
 
 // Resolver struct
 type Resolver struct {
@@ -31,15 +34,17 @@ func (r *Resolver) Query() shop.QueryResolver {
 
 // OrderConfig represents the function configuration
 type OrderConfig struct {
-	Runtime string    `yaml:"runtime"`
-	Path    string    `yaml:"path"`
-	Env     []*string `yaml:"env"`
+	Runtime    string    `yaml:"runtime"`
+	Path       string    `yaml:"path"`
+	Env        []*string `yaml:"env"`
+	Auth       string    `yaml:"auth"`
+	AuthHeader string    `yaml:"auth_header"`
 }
 
 type queryResolver struct{ *Resolver }
 
 func (r *queryResolver) Order(ctx context.Context, name string) (*shop.Order, error) {
-	user := auth.ForContext(ctx)
+	user := UserFromContext(ctx)
 	if user == nil || (user != nil && user.ID == "") {
 		return &shop.Order{}, fmt.Errorf("access denied")
 	}
@@ -63,12 +68,16 @@ func (r *queryResolver) Order(ctx context.Context, name string) (*shop.Order, er
 	path := orderConfig[name].Path
 	env := orderConfig[name].Env
 	runtime := shop.Runtime(orderConfig[name].Runtime)
+	auth := orderConfig[name].Auth
+	authHeader := orderConfig[name].AuthHeader
 
 	return &shop.Order{
-		Name:    name,
-		Runtime: &runtime,
-		Path:    &path,
-		Env:     env,
+		Name:       name,
+		Runtime:    &runtime,
+		Path:       &path,
+		Env:        env,
+		Auth:       &auth,
+		AuthHeader: &authHeader,
 	}, nil
 }
 

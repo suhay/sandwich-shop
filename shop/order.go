@@ -12,47 +12,30 @@ import (
 	"strings"
 	"time"
 
+	"github.com/suhay/sandwich-shop/models"
+
 	"github.com/go-chi/chi"
 	jwt "github.com/golang-jwt/jwt"
 )
 
-// IncOrderContext hold values for the requested tenant and the order name
-type IncOrderContext struct {
+// OrderContext hold values for the requested tenant and the order name
+type OrderContext struct {
 	TenantID string
-	Order    string
+	Order    models.Order
 }
 
-type contextKey string
-
-var incOrderKey = contextKey("incOrder")
+var OrderCtxKey = &contextKey{"order"}
 
 // PlaceOrder takes the posted request and returns the shop value
 func PlaceOrder(w http.ResponseWriter, r *http.Request) {
 	// send order to waiting shop
 	ctx := r.Context()
 	res := Resolver{}
-	incOrder := OrderContext(ctx)
-
-	q, err := res.Query().Order(ctx, incOrder.Order)
-	if err != nil {
-		type Errors struct {
-			Errors []string
-		}
-		errors := Errors{
-			Errors: []string{err.Error()},
-		}
-
-		w.WriteHeader(http.StatusUnauthorized)
-		b, err := json.Marshal(errors)
-		if err != nil {
-			panic(err)
-		}
-		w.Write(b)
-		return
-	}
+	order := OrderFromContext(ctx)
+	user := UserFromContext(ctx)
 
 	limit := 1
-	s, serr := res.Query().Shops(ctx, *q.Runtime, &limit)
+	s, serr := res.Query().Shops(ctx, *order.Order.Runtime, &limit)
 	if serr != nil {
 		panic(serr)
 	}
@@ -62,14 +45,15 @@ func PlaceOrder(w http.ResponseWriter, r *http.Request) {
 		host = host + ":" + strconv.Itoa(*s[0].Port)
 	}
 
-	urlParts := []string{host, incOrder.TenantID, *q.Path}
+	urlParts := []string{host, order.TenantID, *order.Order.Path}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"authorized": true,
-		"tenant":     incOrder.TenantID,
+		"authorized": user.Authorized,
+		"tenant":     order.TenantID,
 		"exp":        time.Now().Add(time.Minute * 1).Unix(),
-		"runtime":    *q.Runtime,
+		"runtime":    order.Order.Runtime,
+		"auth":       order.Order.Auth,
 	})
-	log.Println(os.Getenv("JWT_SECRET"))
+
 	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
 		jwterr := fmt.Errorf("something went wrong validating the request: %s", err.Error())
@@ -99,24 +83,49 @@ func PlaceOrder(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("{}"))
 }
 
-// SetOrderCtx set the IncOrderContext based upon incoming request values
+// SetOrderCtx set the OrderContext based upon incoming request values
 func SetOrderCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tenantID := chi.URLParam(r, "tenantID")
 		order := chi.URLParam(r, "order")
 
-		incOrder := IncOrderContext{
-			TenantID: tenantID,
-			Order:    order,
+		ctx := r.Context()
+		res := Resolver{}
+
+		user := User{ID: tenantID, Authorized: false}
+		ctxWithUser := context.WithValue(ctx, UserCtxKey, user)
+
+		q, err := res.Query().Order(ctxWithUser, order)
+
+		if err != nil {
+			type Errors struct {
+				Errors []string
+			}
+			errors := Errors{
+				Errors: []string{err.Error()},
+			}
+
+			w.WriteHeader(http.StatusUnauthorized)
+			b, err := json.Marshal(errors)
+			if err != nil {
+				panic(err)
+			}
+			w.Write(b)
+			return
 		}
 
-		ctx := context.WithValue(r.Context(), incOrderKey, incOrder)
-		next.ServeHTTP(w, r.WithContext(ctx))
+		orderCtx := OrderContext{
+			TenantID: tenantID,
+			Order:    *q,
+		}
+
+		ctxWithOrder := context.WithValue(ctxWithUser, OrderCtxKey, orderCtx)
+		next.ServeHTTP(w, r.WithContext(ctxWithOrder))
 	})
 }
 
-// OrderContext returns the stored order context
-func OrderContext(ctx context.Context) *IncOrderContext {
-	raw, _ := ctx.Value(incOrderKey).(IncOrderContext)
+// OrderFromContext returns the stored order context
+func OrderFromContext(ctx context.Context) *OrderContext {
+	raw, _ := ctx.Value(OrderCtxKey).(OrderContext)
 	return &raw
 }

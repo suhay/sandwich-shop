@@ -25,6 +25,7 @@ type shopOrder struct {
 	Authorized bool   `json:"authorized"`
 	Tenant     string `json:"tenant"`
 	Runtime    string `json:"runtime"`
+	Auth       string `json:"auth"`
 	jwt.StandardClaims
 }
 
@@ -39,7 +40,7 @@ func setPort(port1, port2 string) string {
 
 func main() {
 	flagEnvPath := flag.String("env", "", "Path to .env file to use")
-	flagPort := flag.String("port", "", "Port for the Gowich to run one")
+	flagPort := flag.String("port", "", "Port for the Gowich to run on")
 
 	flag.Parse()
 
@@ -82,42 +83,24 @@ func main() {
 			}
 
 			if claims, ok := token.Claims.(*shopOrder); ok && token.Valid {
-				if chi.URLParam(r, "tenantID") == claims.Tenant && claims.Authorized {
+				if chi.URLParam(r, "tenantID") == claims.Tenant {
+					if !claims.Authorized {
+						if len(claims.Auth) > 0 {
+							out, err := placeOrder(claims.Auth, claims)
+							if err != nil || out != "true" {
+								log.Println(err.Error())
+								fmt.Fprintf(w, "Not Authorized")
+								return
+							}
+						} else {
+							fmt.Fprintf(w, "Not Authorized")
+							return
+						}
+					}
+
 					order := chi.URLParam(r, "order")
-					var cmd *exec.Cmd
+					out, err := placeOrder(order, claims)
 
-					if strings.HasSuffix(order, ".go") {
-						cmd = exec.Command(os.Getenv(strings.ToUpper(claims.Runtime)), "run", order)
-					} else {
-						cmd = exec.Command("./" + order)
-					}
-
-					tenants := "../tenants"
-					if envTenants := os.Getenv("TENANTS"); envTenants != "" {
-						tenants = envTenants
-					}
-
-					cmd.Dir = tenants + "/" + claims.Tenant
-
-					// cmd.SysProcAttr = &syscall.SysProcAttr{}
-
-					// uid, uerr := strconv.ParseUint(os.Getenv("UID"), 10, 32)
-					// if uerr != nil {
-					// 	log.Println(uerr.Error())
-					// 	fmt.Fprintf(w, "There was an error")
-					// 	return
-					// }
-
-					// gid, gerr := strconv.ParseUint(os.Getenv("GID"), 10, 32)
-					// if gerr != nil {
-					// 	log.Println(gerr.Error())
-					// 	fmt.Fprintf(w, "There was an error")
-					// 	return
-					// }
-
-					// hold := &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid)}
-
-					out, err := cmd.Output()
 					if err != nil {
 						log.Println(err.Error())
 						fmt.Fprintf(w, "There was an error")
@@ -141,4 +124,42 @@ func main() {
 
 	log.Printf("Gowich online: http://localhost:%s/", port)
 	log.Fatal(http.ListenAndServe(":"+port, r))
+}
+
+func placeOrder(order string, claims *shopOrder) (string, error) {
+	var cmd *exec.Cmd
+
+	if strings.HasSuffix(order, ".go") {
+		cmd = exec.Command(os.Getenv(strings.ToUpper(claims.Runtime)), "run", order)
+	} else {
+		cmd = exec.Command("./" + order)
+	}
+
+	tenants := "../tenants"
+	if envTenants := os.Getenv("TENANTS"); envTenants != "" {
+		tenants = envTenants
+	}
+
+	cmd.Dir = tenants + "/" + claims.Tenant
+
+	// cmd.SysProcAttr = &syscall.SysProcAttr{}
+
+	// uid, uerr := strconv.ParseUint(os.Getenv("UID"), 10, 32)
+	// if uerr != nil {
+	// 	log.Println(uerr.Error())
+	// 	fmt.Fprintf(w, "There was an error")
+	// 	return
+	// }
+
+	// gid, gerr := strconv.ParseUint(os.Getenv("GID"), 10, 32)
+	// if gerr != nil {
+	// 	log.Println(gerr.Error())
+	// 	fmt.Fprintf(w, "There was an error")
+	// 	return
+	// }
+
+	// hold := &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid)}
+
+	out, err := cmd.Output()
+	return string(out), err
 }
