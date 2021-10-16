@@ -9,9 +9,9 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 
 	// "syscall"
-	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -127,14 +127,7 @@ func main() {
 }
 
 func placeOrder(order string, claims *shopOrder) (string, error) {
-	var cmd *exec.Cmd
-
-	if strings.HasSuffix(order, ".go") {
-		cmd = exec.Command(os.Getenv(strings.ToUpper(claims.Runtime)), "run", order)
-	} else {
-		cmd = exec.Command("./" + order)
-	}
-
+	cmd := exec.Command(os.Getenv(strings.ToUpper(claims.Runtime)), order)
 	tenants := "../tenants"
 	if envTenants := os.Getenv("TENANTS"); envTenants != "" {
 		tenants = envTenants

@@ -5,17 +5,17 @@ const express = require('express')
 const timeout = require('connect-timeout')
 const util = require('util');
 const exec = util.promisify(require('child_process').exec);
-const { json, urlencoded } = require('body-parser')
-const logger = require('morgan')
+const {
+  json,
+  urlencoded
+} = require('body-parser')
 const path = require('path');
-const e = require('connect-timeout');
 
 const app = express()
 const defaultPort = '4006'
 
 const port = process.env.PORT || defaultPort
 
-app.use(logger('common'))
 app.use(
   jwt({
     secret: process.env.JWT_SECRET,
@@ -31,10 +31,12 @@ app.use(
   })
 )
 app.use(json())
-app.use(urlencoded({ extended: true }))
+app.use(urlencoded({
+  extended: true
+}))
 
-app.post('/:tenantID/:order', 
-  timeout(`${process.env.TIMEOUT || 60}s`), 
+app.post('/:tenantID/:order',
+  timeout(`${process.env.TIMEOUT || 60}s`),
   async (req, res) => {
     if (req.user) {
       console.log('running command...')
@@ -52,15 +54,15 @@ app.post('/:tenantID/:order',
             res.status(401).send('Not Authorized')
           }
         }
-  
+
         const order = req.params.order
         const result = await placeOrder(order, user, req.body)
-  
+
         if (result.stderr) {
           console.error(result.stderr)
           res.status(500).send('There was an error')
         }
-        
+
         res.status(200).type('application/json').send(result.stdout)
       } else {
         res.status(401).send('Not Authorized')
@@ -72,8 +74,7 @@ app.post('/:tenantID/:order',
 )
 
 const placeOrder = (order, user, body) => {
-  return exec(`${process.env[user.runtime.toUpperCase()]} ${order} '${body ? JSON.stringify(body) : ''}'`, 
-  {
+  return exec(`${process.env[user.runtime.toUpperCase()]} ${order} '${body ? JSON.stringify(body) : ''}'`, {
     cwd: path.resolve(`${process.env.TENANTS || '../tenants'}/${user.tenant}`),
     timeout: process.env.TIMEOUT * 1000
   })
