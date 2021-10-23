@@ -27,22 +27,32 @@ type Shop struct {
 type Runtime string
 
 const (
-	RuntimeNode14 Runtime = "node14"
-	RuntimeNode16 Runtime = "node16"
-	RuntimeGo1_15 Runtime = "go1_15"
-	RuntimeGo1_17 Runtime = "go1_17"
+	RuntimeNode14  Runtime = "node14"
+	RuntimeNode15  Runtime = "node15"
+	RuntimeNode16  Runtime = "node16"
+	RuntimeGo1_15  Runtime = "go1_15"
+	RuntimeGo1_16  Runtime = "go1_16"
+	RuntimeGo1_17  Runtime = "go1_17"
+	RuntimePython2 Runtime = "python2"
+	RuntimePython3 Runtime = "python3"
+	RuntimeBinary  Runtime = "binary"
 )
 
 var AllRuntime = []Runtime{
 	RuntimeNode14,
+	RuntimeNode15,
 	RuntimeNode16,
 	RuntimeGo1_15,
+	RuntimeGo1_16,
 	RuntimeGo1_17,
+	RuntimePython2,
+	RuntimePython3,
+	RuntimeBinary,
 }
 
 func (e Runtime) IsValid() bool {
 	switch e {
-	case RuntimeNode14, RuntimeNode16, RuntimeGo1_15, RuntimeGo1_17:
+	case RuntimeNode14, RuntimeNode15, RuntimeNode16, RuntimeGo1_15, RuntimeGo1_16, RuntimeGo1_17, RuntimePython2, RuntimePython3, RuntimeBinary:
 		return true
 	}
 	return false

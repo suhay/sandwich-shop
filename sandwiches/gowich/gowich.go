@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -21,11 +23,15 @@ import (
 
 const defaultPort = "4007"
 
-type shopOrder struct {
-	Authorized bool   `json:"authorized"`
-	Tenant     string `json:"tenant"`
-	Runtime    string `json:"runtime"`
+type order struct {
 	Auth       string `json:"auth"`
+	AuthHeader string `json:"auth_header"`
+	Authorized bool   `json:"authorized"`
+	Env        string `json:"env"`
+	Name       string `json:"name"`
+	Path       string `json:"path"`
+	Runtime    string `json:"runtime"`
+	Tenant     string `json:"tenant"`
 	jwt.StandardClaims
 }
 
@@ -67,9 +73,7 @@ func main() {
 
 	r.Post("/{tenantID}/{order}", func(w http.ResponseWriter, r *http.Request) {
 		if r.Header["Token"] != nil {
-			log.Println("running command...")
-
-			token, err := jwt.ParseWithClaims(r.Header["Token"][0], &shopOrder{}, func(token *jwt.Token) (interface{}, error) {
+			token, err := jwt.ParseWithClaims(r.Header.Get("Token"), &order{}, func(token *jwt.Token) (interface{}, error) {
 				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 					return nil, fmt.Errorf("there was an error")
 				}
@@ -78,56 +82,80 @@ func main() {
 
 			if err != nil {
 				log.Println(err.Error())
-				fmt.Fprintf(w, "There was an error")
+				http.Error(w, http.StatusText(500), 500)
 				return
 			}
 
-			if claims, ok := token.Claims.(*shopOrder); ok && token.Valid {
+			if claims, ok := token.Claims.(*order); ok && token.Valid {
 				if chi.URLParam(r, "tenantID") == claims.Tenant {
+					rBody, _ := ioutil.ReadAll(r.Body)
+					defer r.Body.Close()
+					body := string(rBody)
+
+					var header string
+					if authHeader := claims.AuthHeader; authHeader != "" {
+						header = r.Header.Get(authHeader)
+					} else {
+						header = r.Header.Get("Authorization")
+					}
+
 					if !claims.Authorized {
 						if len(claims.Auth) > 0 {
-							out, err := placeOrder(claims.Auth, claims)
-							if err != nil || out != "true" {
-								log.Println(err.Error())
-								fmt.Fprintf(w, "Not Authorized")
+							out, err := placeOrder(claims.Auth, claims, body, header)
+							log.Println(out)
+							if err != nil || strings.ToLower(out) != "true" {
+								http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 								return
 							}
 						} else {
-							fmt.Fprintf(w, "Not Authorized")
+							http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 							return
 						}
 					}
 
 					order := chi.URLParam(r, "order")
-					out, err := placeOrder(order, claims)
+					out, err := placeOrder(order, claims, body, header)
+					log.Println(out)
 
 					if err != nil {
 						log.Println(err.Error())
-						fmt.Fprintf(w, "There was an error")
+						http.Error(w, http.StatusText(500), 500)
 						return
 					}
 					fmt.Fprintf(w, "%s", out)
 					return
 				}
 
-				fmt.Fprintf(w, "Not Authorized")
+				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 				return
 			}
 
 			log.Println(err.Error())
-			fmt.Fprintf(w, "There was an error")
+			http.Error(w, http.StatusText(500), 500)
 			return
 		}
 
-		fmt.Fprintf(w, "Not Authorized")
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 	})
 
 	log.Printf("Gowich online: http://localhost:%s/", port)
 	log.Fatal(http.ListenAndServe(":"+port, r))
 }
 
-func placeOrder(order string, claims *shopOrder) (string, error) {
-	cmd := exec.Command(os.Getenv(strings.ToUpper(claims.Runtime)), order)
+func placeOrder(order string, claims *order, body string, header string) (string, error) {
+	var cmd *exec.Cmd
+	if claims.Runtime == "binary" {
+		cmd = exec.Command(order, body, header)
+	} else {
+		cmd = exec.Command(os.Getenv(strings.ToUpper(claims.Runtime)), order, body, header)
+	}
+
+	if len(claims.Env) > 0 {
+		env := []string{}
+		json.Unmarshal([]byte(claims.Env), &env)
+		cmd.Env = env
+	}
+
 	tenants := "../tenants"
 	if envTenants := os.Getenv("TENANTS"); envTenants != "" {
 		tenants = envTenants
@@ -154,5 +182,5 @@ func placeOrder(order string, claims *shopOrder) (string, error) {
 	// hold := &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid)}
 
 	out, err := cmd.Output()
-	return string(out), err
+	return strings.TrimSpace(string(out)), err
 }

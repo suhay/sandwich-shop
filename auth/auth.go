@@ -1,10 +1,7 @@
 package auth
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -17,10 +14,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"labix.org/v2/mgo/bson"
 )
-
-type requestBody struct {
-	OperationName string `json:"operationName"`
-}
 
 // Middleware authorization for looking up user credentials
 func Middleware(next http.Handler) http.Handler {
@@ -47,20 +40,6 @@ func Middleware(next http.Handler) http.Handler {
 			w.WriteHeader(http.StatusUnauthorized)
 			next.ServeHTTP(w, r)
 			return
-		}
-
-		if body, _ := io.ReadAll(r.Body); len(body) > 0 {
-			r.Body = io.NopCloser(bytes.NewBuffer(body))
-			rBody := requestBody{}
-			err := json.Unmarshal(body, &rBody)
-			if err == nil {
-				if rBody.OperationName == "IntrospectionQuery" {
-					next.ServeHTTP(w, r)
-					return
-				}
-			} else {
-				log.Println("error: ", err)
-			}
 		}
 
 		var storedKey string

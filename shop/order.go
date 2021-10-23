@@ -46,12 +46,17 @@ func PlaceOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	urlParts := []string{host, order.TenantID, *order.Order.Path}
+	envVariables, _ := json.Marshal(order.Order.Env)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"authorized": user.Authorized,
-		"tenant":     order.TenantID,
-		"exp":        time.Now().Add(time.Minute * 1).Unix(),
-		"runtime":    order.Order.Runtime,
-		"auth":       order.Order.Auth,
+		"auth":        order.Order.Auth,
+		"auth_header": order.Order.AuthHeader,
+		"authorized":  user.Authorized,
+		"env":         string(envVariables),
+		"name":        order.Order.Name,
+		"path":        order.Order.Path,
+		"runtime":     order.Order.Runtime,
+		"tenant":      order.TenantID,
+		"exp":         time.Now().Add(time.Minute * 1).Unix(),
 	})
 
 	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
@@ -65,6 +70,14 @@ func PlaceOrder(w http.ResponseWriter, r *http.Request) {
 	req, _ := http.NewRequest("POST", strings.Join(urlParts, "/"), r.Body)
 	req.Header.Set("Token", tokenString)
 	req.Header.Set("Content-Type", "application/json")
+
+	if authHeader := order.Order.AuthHeader; authHeader != nil && *authHeader != "" {
+		headerVal := r.Header.Get(*authHeader)
+		req.Header.Set(*authHeader, headerVal)
+	} else {
+		headerVal := r.Header.Get("Authorization")
+		req.Header.Set("Authorization", headerVal)
+	}
 
 	resp, err := client.Do(req)
 	if err != nil {
