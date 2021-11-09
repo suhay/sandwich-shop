@@ -244,21 +244,27 @@ var sources = []*ast.Source{
 type Shop {
   name: String!
   host: String!
-  runtimes(id: Runtime) : [Runtime]
+  runtimes(id: Runtime): [Runtime]
   port: Int
 }
 
 enum Runtime {
   node14
+  node15
   node16
   go1_15
+  go1_16
   go1_17
+  python2
+  python3
+  binary
 }
 
 type Query {
-  order(name: String!) : Order
-  shops(runtime: Runtime!, limit: Int) : [Shop]!
-}`, BuiltIn: false},
+  order(name: String!): Order
+  shops(runtime: Runtime!, limit: Int): [Shop]!
+}
+`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
 

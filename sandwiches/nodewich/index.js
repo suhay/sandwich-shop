@@ -40,11 +40,14 @@ app.post('/:tenantID/:order',
   async (req, res) => {
     if (req.user) {
       console.log('running command...')
+      const claims = req.user
 
-      if (req.user.tenant === req.params.tenantID) {
-        if (!req.user.authorized) {
-          if (req.user.auth) {
-            const authResult = await placeOrder(req.user.auth, user)
+      if (claims.tenant === req.params.tenantID) {
+        const body = req.body
+
+        if (!claims.authorized) {
+          if (claims.auth) {
+            const authResult = await placeOrder(claims.auth, claims, body)
             if (authResult.stderr || authResult.stdout !== 'true') {
               console.error(authResult.stderr)
               res.status(401).send('Not Authorized')
@@ -56,7 +59,7 @@ app.post('/:tenantID/:order',
         }
 
         const order = req.params.order
-        const result = await placeOrder(order, user, req.body)
+        const result = await placeOrder(order, claims, body)
 
         if (result.stderr) {
           console.error(result.stderr)
@@ -73,10 +76,24 @@ app.post('/:tenantID/:order',
   }
 )
 
-const placeOrder = (order, user, body) => {
-  return exec(`${process.env[user.runtime.toUpperCase()]} ${order} '${body ? JSON.stringify(body) : ''}'`, {
-    cwd: path.resolve(`${process.env.TENANTS || '../tenants'}/${user.tenant}`),
-    timeout: process.env.TIMEOUT * 1000
+const parseEnvVariables = (envVariables) => {
+  const parsedVars = envVariables.reduce((acc, value) => {
+    const parts = value.split('=')
+    acc[parts[0]] = parts[1]
+    return acc
+  }, {})
+}
+
+const placeOrder = (order, claims, body) => {
+  const envVariables = claims.Env ? JSON.parse(claims.Env) : []
+
+  return exec(`${process.env[claims.runtime.toUpperCase()]} ${order} '${body ? JSON.stringify(body) : ''}'`, {
+    cwd: path.resolve(`${process.env.TENANTS || '../tenants'}/${claims.tenant}`),
+    timeout: process.env.TIMEOUT * 1000,
+    env: {
+      ...process.env,
+      ...parseEnvVariables(envVariables)
+    }
   })
 }
 
