@@ -17,7 +17,7 @@ type Order struct {
 	AuthHeader *string   `json:"auth_header"`
 }
 
-type Shop struct {
+type Sandwich struct {
 	Name     string     `json:"name"`
 	Host     string     `json:"host"`
 	Runtimes []*Runtime `json:"runtimes"`

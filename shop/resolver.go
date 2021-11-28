@@ -24,7 +24,6 @@ type contextKey struct {
 
 // Resolver struct
 type Resolver struct {
-	// shops map[models.Runtime][]*models.Shop
 }
 
 // Query is the resolver bound to the type Query
@@ -50,7 +49,7 @@ func (r *queryResolver) Order(ctx context.Context, name string) (*shop.Order, er
 	}
 
 	tenants := "tenants"
-	if envTenants := os.Getenv("TENANTS"); envTenants != "" {
+	if envTenants, ok := os.LookupEnv("TENANTS"); ok {
 		tenants = envTenants
 	}
 
@@ -81,14 +80,19 @@ func (r *queryResolver) Order(ctx context.Context, name string) (*shop.Order, er
 	}, nil
 }
 
-func (r *queryResolver) Shops(ctx context.Context, name shop.Runtime, limit *int) ([]*shop.Shop, error) {
+func (r *queryResolver) Shops(ctx context.Context, name shop.Runtime, limit *int) ([]*shop.Sandwich, error) {
+	sandwiches, err := r.Sandwiches(ctx, name, limit)
+	return sandwiches, err
+}
+
+func (r *queryResolver) Sandwiches(ctx context.Context, name shop.Runtime, limit *int) ([]*shop.Sandwich, error) {
 	// Check for admin user when we build out the admin dashboards
 	// user := auth.ForContext(ctx)
 	// if user == nil || (user != nil && user.ID == "") {
 	// 	return []*Shop{}, fmt.Errorf("access denied")
 	// }
 
-	avilableShops := []*shop.Shop{}
+	availableSandwiches := []*shop.Sandwich{}
 	var limit64 int64
 
 	if limit == nil {
@@ -99,7 +103,7 @@ func (r *queryResolver) Shops(ctx context.Context, name shop.Runtime, limit *int
 		limit64 = int64(*limit)
 	}
 
-	if mongodbURL := os.Getenv("MONGODB_URL"); len(mongodbURL) > 0 {
+	if mongodbURL, ok := os.LookupEnv("MONGODB_URL"); ok {
 		mctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 
 		client, err := mongo.Connect(mctx, options.Client().SetRetryWrites(true).ApplyURI("mongodb+srv://"+os.Getenv("MONGODB_USER")+":"+os.Getenv("MONGODB_PASSWD")+"@"+mongodbURL+"/"))
@@ -113,7 +117,7 @@ func (r *queryResolver) Shops(ctx context.Context, name shop.Runtime, limit *int
 		findOptions.SetLimit(limit64)
 
 		filter := bson.M{"runtimes": name}
-		shops, err := client.Database("sandwich-shop").Collection("shops").Find(mctx, filter, findOptions)
+		sandwiches, err := client.Database("sandwich-shop").Collection("sandwiches").Find(mctx, filter, findOptions)
 
 		if cancel != nil {
 			defer cancel()
@@ -121,40 +125,48 @@ func (r *queryResolver) Shops(ctx context.Context, name shop.Runtime, limit *int
 
 		if err != nil {
 			log.Println(err)
-			return []*shop.Shop{}, fmt.Errorf("error: %v", err)
+			return []*shop.Sandwich{}, fmt.Errorf("error: %v", err)
 		}
-		if shops == nil {
-			return []*shop.Shop{}, nil
-		}
-
-		for shops.Next(mctx) {
-			var result *shop.Shop
-			shops.Decode(&result)
-			avilableShops = append(avilableShops, result)
+		if sandwiches == nil {
+			return []*shop.Sandwich{}, nil
 		}
 
-		defer shops.Close(mctx)
+		for sandwiches.Next(mctx) {
+			var result *shop.Sandwich
+			sandwiches.Decode(&result)
+			availableSandwiches = append(availableSandwiches, result)
+		}
+
+		defer sandwiches.Close(mctx)
 	} else {
-		shopsFilePath := os.Getenv("SHOPS")
-
-		shops := []shop.Shop{}
-		dat, err := os.ReadFile(shopsFilePath)
-		if err != nil {
-			return []*shop.Shop{}, fmt.Errorf("error: %v", err)
+		tenants := "tenants"
+		if envTenants, ok := os.LookupEnv("TENANTS"); ok {
+			tenants = envTenants
 		}
 
-		json.Unmarshal([]byte(dat), &shops)
-		for i := range shops {
-			for _, v := range shops[i].Runtimes {
+		sandwichesFilePath := tenants + "/sandwiches.json"
+		if envSandwiches, ok := os.LookupEnv("SANDWICHES"); ok {
+			sandwichesFilePath = envSandwiches
+		}
+
+		sandwiches := []shop.Sandwich{}
+		dat, err := os.ReadFile(sandwichesFilePath)
+		if err != nil {
+			return []*shop.Sandwich{}, fmt.Errorf("error: %v", err)
+		}
+
+		json.Unmarshal([]byte(dat), &sandwiches)
+		for i := range sandwiches {
+			for _, v := range sandwiches[i].Runtimes {
 				if *v == name {
-					avilableShops = append(avilableShops, &shops[i])
-					if *limit <= 1 || len(avilableShops) >= *limit {
-						return avilableShops, nil
+					availableSandwiches = append(availableSandwiches, &sandwiches[i])
+					if *limit <= 1 || len(availableSandwiches) >= *limit {
+						return availableSandwiches, nil
 					}
 				}
 			}
 		}
 	}
 
-	return avilableShops, nil
+	return availableSandwiches, nil
 }

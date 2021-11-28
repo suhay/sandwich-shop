@@ -45,7 +45,7 @@ func Middleware(next http.Handler) http.Handler {
 		var storedKey string
 		var authError error
 
-		if mongodbURL := os.Getenv("MONGODB_URL"); len(mongodbURL) > 0 {
+		if mongodbURL, ok := os.LookupEnv("MONGODB_URL"); ok {
 			storedKey, authError = mongoAuth(order.TenantID, mongodbURL)
 		} else {
 			storedKey, authError = localAuth(order.TenantID)
@@ -99,7 +99,7 @@ func mongoAuth(tenantID string, mongodbURL string) (string, error) {
 
 func localAuth(tenantID string) (string, error) {
 	tenants := "../tenants"
-	if envTenants := os.Getenv("TENANTS"); envTenants != "" {
+	if envTenants, ok := os.LookupEnv("TENANTS"); ok {
 		tenants = envTenants
 	}
 

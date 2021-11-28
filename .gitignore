@@ -13,6 +13,7 @@
 
 sandwich-shop
 .env
+.node1.env
 .key
 shop/shop
 gowich

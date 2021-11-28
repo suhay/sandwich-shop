@@ -1,9 +1,9 @@
 ---
 getSandwich: # order name
-  runtime: node14 # shop to run in
+  runtime: node14 # sandwich type to make
   path: getSandwich.js # path where function lives
   env: [] # any variables to include
 makeSandwich: # order name
-  runtime: go1_17 # shop to run in
+  runtime: go1_17 # sandwich type to make
   path: make_sandwich.go # path where function lives
   env: [] # any variables to include

@@ -26,16 +26,16 @@ type OrderContext struct {
 
 var OrderCtxKey = &contextKey{"order"}
 
-// PlaceOrder takes the posted request and returns the shop value
+// PlaceOrder takes the posted request and returns the sandwich value
 func PlaceOrder(w http.ResponseWriter, r *http.Request) {
-	// send order to waiting shop
+	// send order to waiting sandwich
 	ctx := r.Context()
 	res := Resolver{}
 	order := OrderFromContext(ctx)
 	user := UserFromContext(ctx)
 
 	limit := 1
-	s, serr := res.Query().Shops(ctx, *order.Order.Runtime, &limit)
+	s, serr := res.Query().Sandwiches(ctx, *order.Order.Runtime, &limit)
 	if serr != nil {
 		panic(serr)
 	}
@@ -83,7 +83,7 @@ func PlaceOrder(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		jwterr := fmt.Errorf("something went wrong sending client request: %s", err.Error())
 		log.Println(jwterr)
-		w.Write([]byte(`{ "error": "The shops seem to be down." }`))
+		w.Write([]byte(`{ "error": "The shop seems to be down." }`))
 		return
 	}
 

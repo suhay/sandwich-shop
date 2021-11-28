@@ -7,7 +7,7 @@ type Order {
   auth_header: String
 }
 
-type Shop {
+type Sandwich {
   name: String!
   host: String!
   runtimes(id: Runtime): [Runtime]
@@ -28,5 +28,6 @@ enum Runtime {
 
 type Query {
   order(name: String!): Order
-  shops(runtime: Runtime!, limit: Int): [Shop]!
+  shops(runtime: Runtime!, limit: Int): [Sandwich]! @deprecated
+  sandwiches(runtime: Runtime!, limit: Int): [Sandwich]!
 }
