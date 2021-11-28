@@ -1,0 +1,4 @@
+---
+hello:
+  runtime: go1_17
+  path: hello.go

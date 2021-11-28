@@ -8,11 +8,9 @@ services:
     volumes:
       - .:/code
     working_dir: /code
-    command: "./sandwich-shop"
+    command: ["sh", "-c", "make shop && ./sandwich-shop"]
     environment:
       - MODE=DEV
-    links:
-      - "gowich"
 
   gowich:
     image: golang:1.17
@@ -21,4 +19,6 @@ services:
     volumes:
       - .:/code
     working_dir: /code/sandwiches/gowich
-    command: "./gowich --env /code/.node1.env --port 4007"
+    command: ["sh", "-c", "make gowich && ./gowich --env /code/.node1.env --port 4007"]
+    depends_on:
+      - shop

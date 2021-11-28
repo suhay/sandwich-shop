@@ -1,3 +1,5 @@
+.PHONY: shop
+
 gqlgen:
 	go run github.com/99designs/gqlgen
 
@@ -7,6 +9,12 @@ generate:
 dev:
 	MODE=DEV CompileDaemon -directory=./ -color=true -command="./sandwich-shop"
 
-build:
+all:
 	go build
+	cd sandwiches/gowich;	go build
+
+shop:
+	go build
+
+gowich:
 	cd sandwiches/gowich;	go build

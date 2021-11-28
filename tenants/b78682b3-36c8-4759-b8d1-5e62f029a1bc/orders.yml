@@ -6,4 +6,3 @@ getSandwich: # order name
 makeSandwich: # order name
   runtime: go1_17 # sandwich type to make
   path: make_sandwich.go # path where function lives
-  env: [] # any variables to include
