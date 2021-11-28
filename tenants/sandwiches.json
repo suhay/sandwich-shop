@@ -2,13 +2,10 @@
   {
     "_id": "ciabatta",
     "name": "Ciabatta",
-    "host": "http://localhost",
+    "host": "http://gowich",
     "port": 4007,
     "runtimes": [
-      "go1_17",
-      "node14",
-      "node16",
-      "python3"
+      "go1_17"
     ]
   }
 ]

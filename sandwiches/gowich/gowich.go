@@ -105,7 +105,6 @@ func main() {
 					if !claims.Authorized {
 						if len(claims.Auth) > 0 {
 							out, err := placeOrder(claims.Auth, claims, body, header)
-							log.Println(out)
 							if err != nil || strings.ToLower(out) != "true" {
 								http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 								return
@@ -118,7 +117,9 @@ func main() {
 
 					order := chi.URLParam(r, "order")
 					out, err := placeOrder(order, claims, body, header)
+
 					log.Println(out)
+					log.Println(err)
 
 					if err != nil {
 						log.Println(err.Error())
@@ -150,7 +151,14 @@ func placeOrder(order string, claims *order, body string, header string) (string
 	if claims.Runtime == "binary" {
 		cmd = exec.Command(order, body, header)
 	} else {
-		cmd = exec.Command(os.Getenv(strings.ToUpper(claims.Runtime)), order, body, header)
+		runtime := strings.ToUpper(claims.Runtime)
+		name := os.Getenv(runtime)
+
+		if strings.HasPrefix(runtime, "GO") {
+			cmd = exec.Command(name, "run", "/code/tenants/b78682b3-36c8-4759-b8d1-5e62f029a1bc/make_sandwich.go", body, header)
+		} else {
+			cmd = exec.Command(name, order, body, header)
+		}
 	}
 
 	if len(claims.Env) > 0 {
@@ -165,6 +173,9 @@ func placeOrder(order string, claims *order, body string, header string) (string
 	}
 
 	cmd.Dir = tenants + "/" + claims.Tenant
+
+	log.Println(os.Getwd())
+	log.Println(cmd)
 
 	// cmd.SysProcAttr = &syscall.SysProcAttr{}
 
@@ -185,5 +196,7 @@ func placeOrder(order string, claims *order, body string, header string) (string
 	// hold := &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid)}
 
 	out, err := cmd.Output()
+	log.Println(out)
+	log.Println(err)
 	return strings.TrimSpace(string(out)), err
 }

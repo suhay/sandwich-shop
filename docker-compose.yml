@@ -1,0 +1,24 @@
+version: "3.1"
+
+services:
+  shop:
+    image: golang:1.17
+    ports:
+      - "3002:3002"
+    volumes:
+      - .:/code
+    working_dir: /code
+    command: "./sandwich-shop"
+    environment:
+      - MODE=DEV
+    links:
+      - "gowich"
+
+  gowich:
+    image: golang:1.17
+    ports:
+      - "4007:4007"
+    volumes:
+      - .:/code
+    working_dir: /code/sandwiches/gowich
+    command: "./gowich --env /code/.node1.env --port 4007"

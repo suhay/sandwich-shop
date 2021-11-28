@@ -56,7 +56,6 @@ func main() {
 	}
 
 	port := setPort(*flagPort)
-
 	srv := handler.NewDefaultServer(models.NewExecutableSchema(models.Config{Resolvers: &shop.Resolver{}}))
 	r := chi.NewRouter()
 

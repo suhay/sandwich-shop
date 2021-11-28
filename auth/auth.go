@@ -98,7 +98,7 @@ func mongoAuth(tenantID string, mongodbURL string) (string, error) {
 }
 
 func localAuth(tenantID string) (string, error) {
-	tenants := "../tenants"
+	tenants := "tenants"
 	if envTenants, ok := os.LookupEnv("TENANTS"); ok {
 		tenants = envTenants
 	}
@@ -109,5 +109,5 @@ func localAuth(tenantID string) (string, error) {
 		return "", err
 	}
 
-	return string(dat), nil
+	return strings.TrimSpace(string(dat)), nil
 }

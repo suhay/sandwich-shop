@@ -88,6 +88,11 @@ func PlaceOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if body, _ := ioutil.ReadAll(resp.Body); len(body) > 0 {
+		if resp.StatusCode != 200 {
+			http.Error(w, http.StatusText(resp.StatusCode), resp.StatusCode)
+			return
+		}
+
 		w.Header().Add("Content-Type", "application/json")
 		w.Write(body)
 		return
