@@ -20,20 +20,20 @@ import (
 
 const defaultPort = "3002"
 
-func setPort(port1, port2 string) string {
+func setPort(port1 string) string {
 	if port1 != "" {
 		return port1
-	} else if port2 != "" {
-		return port2
+	} else if val, ok := os.LookupEnv("PORT"); ok {
+		return val
 	}
 	return defaultPort
 }
 
-func setMode(mode1, mode2 string) *string {
+func setMode(mode1 string) *string {
 	if mode1 != "" {
 		return &mode1
-	} else if mode2 != "" {
-		return &mode2
+	} else if val, ok := os.LookupEnv("MODE"); ok {
+		return &val
 	}
 	return nil
 }
@@ -55,8 +55,7 @@ func main() {
 		}
 	}
 
-	port := setPort(*flagPort, os.Getenv("PORT"))
-
+	port := setPort(*flagPort)
 	srv := handler.NewDefaultServer(models.NewExecutableSchema(models.Config{Resolvers: &shop.Resolver{}}))
 	r := chi.NewRouter()
 
@@ -66,7 +65,7 @@ func main() {
 	r.Use(middleware.Timeout(60 * time.Second))
 	r.Use(middleware.ThrottleBacklog(2, 5, time.Second*61))
 
-	if mode := setMode(*flagMode, os.Getenv("MODE")); mode != nil {
+	if mode := setMode(*flagMode); mode != nil {
 		if *mode == "DEV" {
 			log.Println("Running in development mode.")
 			r.Handle("/graphql", playground.Handler("GraphQL playground", "/query"))

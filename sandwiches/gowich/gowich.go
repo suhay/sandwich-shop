@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
 	"time"
 
@@ -35,11 +34,11 @@ type order struct {
 	jwt.StandardClaims
 }
 
-func setPort(port1, port2 string) string {
+func setPort(port1 string) string {
 	if port1 != "" {
 		return port1
-	} else if port2 != "" {
-		return port2
+	} else if val, ok := os.LookupEnv("PORT"); ok {
+		return val
 	}
 	return defaultPort
 }
@@ -47,7 +46,6 @@ func setPort(port1, port2 string) string {
 func main() {
 	flagEnvPath := flag.String("env", "", "Path to .env file to use")
 	flagPort := flag.String("port", "", "Port for the Gowich to run on")
-
 	flag.Parse()
 
 	if *flagEnvPath != "" {
@@ -60,16 +58,21 @@ func main() {
 		}
 	}
 
-	port := setPort(*flagPort, os.Getenv("PORT"))
+	port := setPort(*flagPort)
+
+	timeout := 60
+	if val, ok := os.LookupEnv("TIMEOUT"); ok {
+		if i, err := fmt.Sscan(val); err == nil {
+			timeout = i
+		}
+	}
 
 	r := chi.NewRouter()
-
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	i, _ := strconv.ParseInt(os.Getenv("TIMEOUT"), 10, 32)
-	r.Use(middleware.Timeout(time.Second * time.Duration(i)))
-	r.Use(middleware.ThrottleBacklog(2, 5, time.Second*time.Duration(i+1)))
+	r.Use(middleware.Timeout(time.Second * time.Duration(timeout)))
+	r.Use(middleware.ThrottleBacklog(2, 5, time.Second*time.Duration(timeout+1)))
 
 	r.Post("/{tenantID}/{order}", func(w http.ResponseWriter, r *http.Request) {
 		if r.Header["Token"] != nil {
@@ -102,7 +105,6 @@ func main() {
 					if !claims.Authorized {
 						if len(claims.Auth) > 0 {
 							out, err := placeOrder(claims.Auth, claims, body, header)
-							log.Println(out)
 							if err != nil || strings.ToLower(out) != "true" {
 								http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 								return
@@ -115,7 +117,6 @@ func main() {
 
 					order := chi.URLParam(r, "order")
 					out, err := placeOrder(order, claims, body, header)
-					log.Println(out)
 
 					if err != nil {
 						log.Println(err.Error())
@@ -147,17 +148,24 @@ func placeOrder(order string, claims *order, body string, header string) (string
 	if claims.Runtime == "binary" {
 		cmd = exec.Command(order, body, header)
 	} else {
-		cmd = exec.Command(os.Getenv(strings.ToUpper(claims.Runtime)), order, body, header)
+		runtime := strings.ToUpper(claims.Runtime)
+		name := os.Getenv(runtime)
+
+		if strings.HasPrefix(runtime, "GO") {
+			cmd = exec.Command(name, "run", order, body, header)
+		} else {
+			cmd = exec.Command(name, order, body, header)
+		}
 	}
 
-	if len(claims.Env) > 0 {
+	if claims.Env != "[]" && len(claims.Env) > 0 {
 		env := []string{}
 		json.Unmarshal([]byte(claims.Env), &env)
 		cmd.Env = env
 	}
 
-	tenants := "../tenants"
-	if envTenants := os.Getenv("TENANTS"); envTenants != "" {
+	tenants := "../../tenants"
+	if envTenants, ok := os.LookupEnv("TENANTS"); ok {
 		tenants = envTenants
 	}
 

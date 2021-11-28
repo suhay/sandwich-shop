@@ -1,0 +1,24 @@
+version: "3.1"
+
+services:
+  shop:
+    image: golang:1.17
+    ports:
+      - "3002:3002"
+    volumes:
+      - .:/code
+    working_dir: /code
+    command: ["sh", "-c", "make shop && ./sandwich-shop"]
+    environment:
+      - MODE=DEV
+
+  gowich:
+    image: golang:1.17
+    ports:
+      - "4007:4007"
+    volumes:
+      - .:/code
+    working_dir: /code/sandwiches/gowich
+    command: ["sh", "-c", "make gowich && ./gowich --env /code/.node1.env --port 4007"]
+    depends_on:
+      - shop

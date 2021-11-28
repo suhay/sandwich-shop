@@ -1,26 +1,4 @@
-GOCMD=go
-GOINSTALL=$(GOCMD) install
-GOCLEAN=$(GOCMD) clean
-GOWICHINSTALL=$(GOINSTALL) ${GOPATH}/src/github.com/suhay/sandwich-shop/gowich/gowich.go
-NODEWICH=cd ${GOPATH}/src/github.com/suhay/sandwich-shop/nodewich && yarn install --production && cd $(shell pwd)
-
-install: 
-	$(GOINSTALL) ${GOPATH}/src/github.com/suhay/sandwich-shop/shop/sandwich-shop.go
-
-sandwiches:
-	$(GOWICHINSTALL)
-	$(NODEWICH)
-
-nodewich:
-	$(NODEWICH)
-
-gowich:
-	$(GOWICHINSTALL)
-
-clean: 
-	$(GOCLEAN)
-	rm -f ${GOPATH}/bin/sandwich-shop
-	rm -f ${GOPATH}/bin/gowich
+.PHONY: shop
 
 gqlgen:
 	go run github.com/99designs/gqlgen
@@ -31,6 +9,12 @@ generate:
 dev:
 	MODE=DEV CompileDaemon -directory=./ -color=true -command="./sandwich-shop"
 
-build:
+all:
 	go build
+	cd sandwiches/gowich;	go build
+
+shop:
+	go build
+
+gowich:
 	cd sandwiches/gowich;	go build
