@@ -51,11 +51,12 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Order func(childComplexity int, name string) int
-		Shops func(childComplexity int, runtime Runtime, limit *int) int
+		Order      func(childComplexity int, name string) int
+		Sandwiches func(childComplexity int, runtime Runtime, limit *int) int
+		Shops      func(childComplexity int, runtime Runtime, limit *int) int
 	}
 
-	Shop struct {
+	Sandwich struct {
 		Host     func(childComplexity int) int
 		Name     func(childComplexity int) int
 		Port     func(childComplexity int) int
@@ -65,7 +66,8 @@ type ComplexityRoot struct {
 
 type QueryResolver interface {
 	Order(ctx context.Context, name string) (*Order, error)
-	Shops(ctx context.Context, runtime Runtime, limit *int) ([]*Shop, error)
+	Shops(ctx context.Context, runtime Runtime, limit *int) ([]*Sandwich, error)
+	Sandwiches(ctx context.Context, runtime Runtime, limit *int) ([]*Sandwich, error)
 }
 
 type executableSchema struct {
@@ -137,6 +139,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Order(childComplexity, args["name"].(string)), true
 
+	case "Query.sandwiches":
+		if e.complexity.Query.Sandwiches == nil {
+			break
+		}
+
+		args, err := ec.field_Query_sandwiches_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Sandwiches(childComplexity, args["runtime"].(Runtime), args["limit"].(*int)), true
+
 	case "Query.shops":
 		if e.complexity.Query.Shops == nil {
 			break
@@ -149,38 +163,38 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Shops(childComplexity, args["runtime"].(Runtime), args["limit"].(*int)), true
 
-	case "Shop.host":
-		if e.complexity.Shop.Host == nil {
+	case "Sandwich.host":
+		if e.complexity.Sandwich.Host == nil {
 			break
 		}
 
-		return e.complexity.Shop.Host(childComplexity), true
+		return e.complexity.Sandwich.Host(childComplexity), true
 
-	case "Shop.name":
-		if e.complexity.Shop.Name == nil {
+	case "Sandwich.name":
+		if e.complexity.Sandwich.Name == nil {
 			break
 		}
 
-		return e.complexity.Shop.Name(childComplexity), true
+		return e.complexity.Sandwich.Name(childComplexity), true
 
-	case "Shop.port":
-		if e.complexity.Shop.Port == nil {
+	case "Sandwich.port":
+		if e.complexity.Sandwich.Port == nil {
 			break
 		}
 
-		return e.complexity.Shop.Port(childComplexity), true
+		return e.complexity.Sandwich.Port(childComplexity), true
 
-	case "Shop.runtimes":
-		if e.complexity.Shop.Runtimes == nil {
+	case "Sandwich.runtimes":
+		if e.complexity.Sandwich.Runtimes == nil {
 			break
 		}
 
-		args, err := ec.field_Shop_runtimes_args(context.TODO(), rawArgs)
+		args, err := ec.field_Sandwich_runtimes_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Shop.Runtimes(childComplexity, args["id"].(*Runtime)), true
+		return e.complexity.Sandwich.Runtimes(childComplexity, args["id"].(*Runtime)), true
 
 	}
 	return 0, false
@@ -241,7 +255,7 @@ var sources = []*ast.Source{
   auth_header: String
 }
 
-type Shop {
+type Sandwich {
   name: String!
   host: String!
   runtimes(id: Runtime): [Runtime]
@@ -262,7 +276,8 @@ enum Runtime {
 
 type Query {
   order(name: String!): Order
-  shops(runtime: Runtime!, limit: Int): [Shop]!
+  shops(runtime: Runtime!, limit: Int): [Sandwich]! @deprecated
+  sandwiches(runtime: Runtime!, limit: Int): [Sandwich]!
 }
 `, BuiltIn: false},
 }
@@ -302,6 +317,30 @@ func (ec *executionContext) field_Query_order_args(ctx context.Context, rawArgs 
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_sandwiches_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 Runtime
+	if tmp, ok := rawArgs["runtime"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("runtime"))
+		arg0, err = ec.unmarshalNRuntime2githubᚗcomᚋsuhayᚋsandwichᚑshopᚋmodelsᚐRuntime(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["runtime"] = arg0
+	var arg1 *int
+	if tmp, ok := rawArgs["limit"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["limit"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_shops_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -326,7 +365,7 @@ func (ec *executionContext) field_Query_shops_args(ctx context.Context, rawArgs 
 	return args, nil
 }
 
-func (ec *executionContext) field_Shop_runtimes_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Sandwich_runtimes_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 *Runtime
@@ -650,9 +689,51 @@ func (ec *executionContext) _Query_shops(ctx context.Context, field graphql.Coll
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*Shop)
+	res := resTmp.([]*Sandwich)
 	fc.Result = res
-	return ec.marshalNShop2ᚕᚖgithubᚗcomᚋsuhayᚋsandwichᚑshopᚋmodelsᚐShop(ctx, field.Selections, res)
+	return ec.marshalNSandwich2ᚕᚖgithubᚗcomᚋsuhayᚋsandwichᚑshopᚋmodelsᚐSandwich(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_sandwiches(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_sandwiches_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Sandwiches(rctx, args["runtime"].(Runtime), args["limit"].(*int))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*Sandwich)
+	fc.Result = res
+	return ec.marshalNSandwich2ᚕᚖgithubᚗcomᚋsuhayᚋsandwichᚑshopᚋmodelsᚐSandwich(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -726,7 +807,7 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	return ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Shop_name(ctx context.Context, field graphql.CollectedField, obj *Shop) (ret graphql.Marshaler) {
+func (ec *executionContext) _Sandwich_name(ctx context.Context, field graphql.CollectedField, obj *Sandwich) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -734,7 +815,7 @@ func (ec *executionContext) _Shop_name(ctx context.Context, field graphql.Collec
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:     "Shop",
+		Object:     "Sandwich",
 		Field:      field,
 		Args:       nil,
 		IsMethod:   false,
@@ -761,7 +842,7 @@ func (ec *executionContext) _Shop_name(ctx context.Context, field graphql.Collec
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Shop_host(ctx context.Context, field graphql.CollectedField, obj *Shop) (ret graphql.Marshaler) {
+func (ec *executionContext) _Sandwich_host(ctx context.Context, field graphql.CollectedField, obj *Sandwich) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -769,7 +850,7 @@ func (ec *executionContext) _Shop_host(ctx context.Context, field graphql.Collec
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:     "Shop",
+		Object:     "Sandwich",
 		Field:      field,
 		Args:       nil,
 		IsMethod:   false,
@@ -796,7 +877,7 @@ func (ec *executionContext) _Shop_host(ctx context.Context, field graphql.Collec
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Shop_runtimes(ctx context.Context, field graphql.CollectedField, obj *Shop) (ret graphql.Marshaler) {
+func (ec *executionContext) _Sandwich_runtimes(ctx context.Context, field graphql.CollectedField, obj *Sandwich) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -804,7 +885,7 @@ func (ec *executionContext) _Shop_runtimes(ctx context.Context, field graphql.Co
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:     "Shop",
+		Object:     "Sandwich",
 		Field:      field,
 		Args:       nil,
 		IsMethod:   false,
@@ -813,7 +894,7 @@ func (ec *executionContext) _Shop_runtimes(ctx context.Context, field graphql.Co
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Shop_runtimes_args(ctx, rawArgs)
+	args, err := ec.field_Sandwich_runtimes_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -835,7 +916,7 @@ func (ec *executionContext) _Shop_runtimes(ctx context.Context, field graphql.Co
 	return ec.marshalORuntime2ᚕᚖgithubᚗcomᚋsuhayᚋsandwichᚑshopᚋmodelsᚐRuntime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Shop_port(ctx context.Context, field graphql.CollectedField, obj *Shop) (ret graphql.Marshaler) {
+func (ec *executionContext) _Sandwich_port(ctx context.Context, field graphql.CollectedField, obj *Sandwich) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -843,7 +924,7 @@ func (ec *executionContext) _Shop_port(ctx context.Context, field graphql.Collec
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:     "Shop",
+		Object:     "Sandwich",
 		Field:      field,
 		Args:       nil,
 		IsMethod:   false,
@@ -2074,6 +2155,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "sandwiches":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_sandwiches(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "__type":
 			out.Values[i] = ec._Query___type(ctx, field)
 		case "__schema":
@@ -2089,31 +2184,31 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 	return out
 }
 
-var shopImplementors = []string{"Shop"}
+var sandwichImplementors = []string{"Sandwich"}
 
-func (ec *executionContext) _Shop(ctx context.Context, sel ast.SelectionSet, obj *Shop) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, shopImplementors)
+func (ec *executionContext) _Sandwich(ctx context.Context, sel ast.SelectionSet, obj *Sandwich) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sandwichImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("Shop")
+			out.Values[i] = graphql.MarshalString("Sandwich")
 		case "name":
-			out.Values[i] = ec._Shop_name(ctx, field, obj)
+			out.Values[i] = ec._Sandwich_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
 		case "host":
-			out.Values[i] = ec._Shop_host(ctx, field, obj)
+			out.Values[i] = ec._Sandwich_host(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
 		case "runtimes":
-			out.Values[i] = ec._Shop_runtimes(ctx, field, obj)
+			out.Values[i] = ec._Sandwich_runtimes(ctx, field, obj)
 		case "port":
-			out.Values[i] = ec._Shop_port(ctx, field, obj)
+			out.Values[i] = ec._Sandwich_port(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2400,7 +2495,7 @@ func (ec *executionContext) marshalNRuntime2githubᚗcomᚋsuhayᚋsandwichᚑsh
 	return v
 }
 
-func (ec *executionContext) marshalNShop2ᚕᚖgithubᚗcomᚋsuhayᚋsandwichᚑshopᚋmodelsᚐShop(ctx context.Context, sel ast.SelectionSet, v []*Shop) graphql.Marshaler {
+func (ec *executionContext) marshalNSandwich2ᚕᚖgithubᚗcomᚋsuhayᚋsandwichᚑshopᚋmodelsᚐSandwich(ctx context.Context, sel ast.SelectionSet, v []*Sandwich) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -2424,7 +2519,7 @@ func (ec *executionContext) marshalNShop2ᚕᚖgithubᚗcomᚋsuhayᚋsandwich�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOShop2ᚖgithubᚗcomᚋsuhayᚋsandwichᚑshopᚋmodelsᚐShop(ctx, sel, v[i])
+			ret[i] = ec.marshalOSandwich2ᚖgithubᚗcomᚋsuhayᚋsandwichᚑshopᚋmodelsᚐSandwich(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -2837,11 +2932,11 @@ func (ec *executionContext) marshalORuntime2ᚖgithubᚗcomᚋsuhayᚋsandwich�
 	return v
 }
 
-func (ec *executionContext) marshalOShop2ᚖgithubᚗcomᚋsuhayᚋsandwichᚑshopᚋmodelsᚐShop(ctx context.Context, sel ast.SelectionSet, v *Shop) graphql.Marshaler {
+func (ec *executionContext) marshalOSandwich2ᚖgithubᚗcomᚋsuhayᚋsandwichᚑshopᚋmodelsᚐSandwich(ctx context.Context, sel ast.SelectionSet, v *Sandwich) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
-	return ec._Shop(ctx, sel, v)
+	return ec._Sandwich(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {
