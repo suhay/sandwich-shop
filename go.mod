@@ -2,10 +2,6 @@ module github.com/suhay/sandwich-shop
 
 go 1.17
 
-replace github.com/suhay/sandwich-shop => ./
-
-replace github.com/suhay/sandwich-shop/auth => ./auth
-
 require (
 	github.com/99designs/gqlgen v0.14.0
 	github.com/go-chi/chi v4.1.2+incompatible
