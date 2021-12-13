@@ -19,6 +19,6 @@ services:
     volumes:
       - .:/code
     working_dir: /code/sandwiches/gowich
-    command: ["sh", "-c", "make gowich && ./gowich --env /code/.node1.env --port 4007"]
+    command: ["sh", "-c", "make gowich && ./gowich --env /code/.gowich.env --port 4007"]
     depends_on:
       - shop

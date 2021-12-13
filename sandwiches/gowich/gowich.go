@@ -71,8 +71,7 @@ func main() {
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Use(middleware.Timeout(time.Second * time.Duration(timeout)))
-	r.Use(middleware.ThrottleBacklog(2, 5, time.Second*time.Duration(timeout+1)))
+	r.Use(middleware.Timeout(time.Duration(timeout) * time.Second))
 
 	r.Post("/{tenantID}/{order}", func(w http.ResponseWriter, r *http.Request) {
 		if r.Header["Token"] != nil {

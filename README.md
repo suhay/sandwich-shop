@@ -10,9 +10,9 @@ The purpose of this experiment is to explore other alternatives to the container
 ### Build
 
 ```bash
-$ gh repo clone suhay/sandwich-shop
-$ cd sandwich-shop
-$ make build
+gh repo clone suhay/sandwich-shop
+cd sandwich-shop
+make build
 ```
 
 This will build directly from the source code. The compiled binary will be within the project directory. One benefit of doing it this way is the `.env` file path will default to the project's root. This means you will not need to specify it as an argument.
@@ -20,15 +20,16 @@ This will build directly from the source code. The compiled binary will be withi
 ### Install
 
 ```bash
-$ go install github.com/suhay/sandwich-shop@latest
+go install github.com/suhay/sandwich-shop@latest
+go install github.com/suhay/sandwich-shop/sandwiches/gowich@latest
 ```
 
-Install the latest release of Sandwich Shop. This will add the binary to your `GOPATH`. The benefit of installing vs building is being able to run the binary within any directory. You will, however, need to specify a path to the `.env` file you want to use as an argument.
+Install the latest release of Sandwich Shop. This will add the binary to your `GOPATH`. The benefit of installing vs building is being able to run the binary within any directory. You will, however, need to specify a path to the `.env` file you want to use as an argument. Also, be sure to add `$GOPATH/bin` to your `PATH`,
 
 ### Run
 
 ```bash
-$ sandwich-shop [--env=<path>] [--port=<port>]
+sandwich-shop [--env=<path>] [--port=<port>]
 ```
 
 If you built the application from the source, you will need to execute the binary within the project directory.
@@ -127,7 +128,7 @@ TENANTS=/path/to/tenants
 ### Running
 
 ```bash
-$ gowich [--env=<path>] [--port=<port>]
+gowich [--env=<path>] [--port=<port>]
 ```
 
 | Flag | Description |
@@ -161,7 +162,7 @@ TENANTS=/path/to/tenants
 ### Running
 
 ```bash
-$ nodewich [--env=<path>] [--port=<port>]
+nodewich [--env=<path>] [--port=<port>]
 ```
 
 | Flag | Description |
@@ -215,35 +216,33 @@ this-is-my-api-key
 ## TL;DR - `sudo make me a gowich`
 
 ```bash
-$ mkdir ~/sandwich-shop
-$ go install github.com/suhay/sandwich-shop@latest
+mkdir ~/sandwich-shop
+go install github.com/suhay/sandwich-shop@latest
+go install github.com/suhay/sandwich-shop/sandwiches/gowich@latest
 
-$ cd ~/sandwich-shop
-$ echo "JWT_SECRET=1234567890jwtsecretcode" > .env
-$ printf "JWT_SECRET=1234567890jwtsecretcode\nGO1_17=/usr/local/go/bin/go" > .node1.env
-$ mkdir tenants
+cd ~/sandwich-shop
+printf "JWT_SECRET=1234567890jwtsecretcode\nTENANTS=~/sandwich-shop" > .env
+printf "JWT_SECRET=1234567890jwtsecretcode\nGO1_17=/usr/local/go/bin/go" > .node1.env
+echo '[{"_id": "ciabatta", "name": "Ciabatta", "host": "http://127.0.0.1", "port": 4007, "runtimes": ["go1_17"]}]' > sandwiches.json
+mkdir myFunctions
 
-$ cd tenants
-$ echo '[{"_id": "ciabatta", "name": "Ciabatta", "host": "http://127.0.0.1", "port": 4007, "runtimes": ["go1_17"]}]' > sandwiches.json
-$ mkdir myFunctions
-
-$ cd myFunctions
-$ echo "password1234" > .key
-$ printf -- '---\nhello:\n  runtime: go1_17\n  path: hello.go' > orders.yml
-$ printf 'package main\nimport "fmt"\nfunc main() {\nfmt.Printf("%%s", "Hello!")\n}' > hello.go
+cd myFunctions
+echo "password1234" > .key
+printf -- '---\nhello:\n  runtime: go1_17\n  path: hello.go' > orders.yml
+printf 'package main\nimport "fmt"\nfunc main() {\nfmt.Printf("%%s", "Hello!")\n}' > hello.go
 ```
 
 ### Run
 
 ```
-$ sandwich-shop --env ~/sandwich-shop/.env &
-$ gowich --env ~/sandwich-shop/.node1.env --port 4007 &
+sandwich-shop --env ~/sandwich-shop/.env &
+gowich --env ~/sandwich-shop/.node1.env --port 4007 &
 ```
 
 ### Use
 
 ```bash
-$ curl --header "Authorization: Bearer password1234" http://localhost:3002/myFunctions/hello
+curl -X POST --header "Authorization: Bearer password1234" http://localhost:3002/shop/myFunctions/hello
 ```
 
 ## Current Development
@@ -256,5 +255,5 @@ $ curl --header "Authorization: Bearer password1234" http://localhost:3002/myFun
 ### Developing for Sandwich Shop
 
 ```
-$ make dev
+make dev
 ```

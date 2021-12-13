@@ -63,7 +63,7 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(60 * time.Second))
-	r.Use(middleware.ThrottleBacklog(2, 5, time.Second*61))
+	r.Use(middleware.ThrottleBacklog(10, 50, time.Second*61))
 
 	if mode := setMode(*flagMode); mode != nil {
 		if *mode == "DEV" {
